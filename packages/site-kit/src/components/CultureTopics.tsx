@@ -46,8 +46,7 @@ const tips: Record<"la-nieve" | "unimarka", readonly Tip[]> = {
         "Un espacio limpio, iluminado y organizado genera confianza y hace que tus clientes quieran regresar.",
     },
     {
-      file: "clientes",
-      transparent: true,
+      file: "clientes-v2",
       title: "Conoce a tus clientes",
       detail:
         "Escucha sus necesidades, identifica sus productos favoritos y adapta tu surtido a lo que realmente buscan.",
