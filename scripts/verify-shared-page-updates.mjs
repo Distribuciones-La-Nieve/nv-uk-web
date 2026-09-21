@@ -10,7 +10,6 @@ for (const app of ["la-nieve", "unimarka"]) {
     home,
     culture,
     careers,
-    contact,
     legal,
     ethics,
     pqrs,
@@ -22,7 +21,6 @@ for (const app of ["la-nieve", "unimarka"]) {
     readPage("index.html"),
     readPage("cultura.html"),
     readPage("trabaja-con-nosotros.html"),
-    readPage("contacto.html"),
     readPage("legal.html"),
     readPage(path.join("legal", "codigo-de-etica.html")),
     readPage(path.join("legal", "pqrs.html")),
@@ -38,18 +36,18 @@ for (const app of ["la-nieve", "unimarka"]) {
     assert.doesNotMatch(legalPage, /whatsapp-personaje/);
   }
 
-  assert.match(contact, /Contacto general/);
-  assert.match(contact, /Soy cliente/);
   assert.match(careers, /Demostración: no son vacantes reales/);
-  assert.match(careers, /Postulación espontánea/);
   assert.match(filing, /Hechos y razones/);
   assert.match(filing, /Explique su requerimiento/);
   assert.doesNotMatch(filing, /Apoderado o representante/);
   assert.doesNotMatch(filing, /Objetivo de la solicitud/);
   assert.doesNotMatch(filing, /Objeto de la solicitud/);
-  assert.match(suppliers, /Quiero ser proveedor de mercancía/);
-  assert.doesNotMatch(suppliers, /Proveedor de servicios/);
-  assert.doesNotMatch(suppliers, /Es competencia de alguna/);
+  assert.match(suppliers, /Quiero ser proveedor de/);
+  assert.match(suppliers, /Proveedor de servicios/);
+  assert.match(suppliers, /Es competencia de alguna/);
+  assert.match(suppliers, /Canales directos/);
+  assert.match(suppliers, /Redes sociales/);
+  assert.doesNotMatch(legal, /Borrador ficticio, provisional y no aprobado/);
   assert.match(ethics, /Borrador ficticio, provisional y no aprobado/);
   assert.match(ethics, /noindex/);
   assert.doesNotMatch(sitemap, /codigo-de-etica/);
@@ -69,5 +67,5 @@ for (const app of ["la-nieve", "unimarka"]) {
 }
 
 console.log(
-  "Both builds include contact, ethics, careers and PQRS updates; Unimarka culture and ally ordering are present."
+  "Both builds include suppliers, ethics, careers and PQRS updates; Unimarka culture and ally ordering are present."
 );

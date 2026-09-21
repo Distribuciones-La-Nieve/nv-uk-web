@@ -39,7 +39,7 @@ export const PQRS_REQUEST_TYPES = [
 ] as const;
 
 export const PQRS_SUBMISSION_NOTE =
-  "El formulario envía tu PQRS por correo al equipo de atención. No genera un número de radicado ni permite consultar un expediente en línea.";
+  "Al enviar tu PQRS se guarda un expediente y se genera un número de radicado. Recibirás la confirmación en el correo registrado.";
 
 export const PQRS_DOCUMENT_TYPES = [
   "Cédula de ciudadanía",

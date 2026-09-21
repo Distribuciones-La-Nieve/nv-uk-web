@@ -31,7 +31,6 @@ export type SitePageKey =
   | "about"
   | "allies"
   | "culture"
-  | "contact"
   | "suppliers"
   | "careers"
   | "legal"

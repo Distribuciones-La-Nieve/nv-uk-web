@@ -61,17 +61,6 @@ const minimumOpticalScales = new Map([
   ["023", 1.5],
 ]);
 
-const expectedCommercialHouses = [
-  "Alpina",
-  "Colgate-Palmolive",
-  "BAT",
-  "Nestlé Alimentos",
-  "Levapan",
-  "Nestlé Purina",
-  "Harinera del Valle",
-  "Softys",
-];
-
 function renderedImages(html) {
   return html.match(/<img\b[^>]*>/g) ?? [];
 }
@@ -92,14 +81,10 @@ assert.deepEqual(
   "La página debe presentar las 37 marcas en el orden editorial aprobado"
 );
 
-const renderedCommercialHouses = [
-  ...alliesHtml.matchAll(/data-commercial-house="([^"]+)"/g),
-].map((match) => match[1]);
-
-assert.deepEqual(
-  renderedCommercialHouses,
-  expectedCommercialHouses,
-  "Las marcas deben quedar agrupadas por casa comercial"
+assert.doesNotMatch(
+  alliesHtml,
+  /Casa comercial|>\d+ marcas</,
+  "La cuadrícula no debe repetir la casa comercial ni el conteo de marcas"
 );
 
 assert.equal(

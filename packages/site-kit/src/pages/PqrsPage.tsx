@@ -9,9 +9,7 @@ import {
   PQRS_SUBMISSION_NOTE,
 } from "../config/pqrsFilingContent";
 
-/**
- * PQRS information route prepared for a future validated submission channel.
- */
+/** PQRS information route with a formal submission channel. */
 export function PqrsPage({ site }: { site: SiteConfig }) {
   return (
     <>

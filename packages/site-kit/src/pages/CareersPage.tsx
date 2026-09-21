@@ -8,7 +8,11 @@ import type { SiteConfig } from "../config/types";
 import { PageIntro } from "../components/PageIntro";
 import { RevealGroup } from "../components/RevealGroup";
 import { TurnstileWidget } from "../components/TurnstileWidget";
-import { isValidEmail, sanitizePhone } from "../lib/formValidation";
+import {
+  createClientRequestId,
+  isValidEmail,
+  sanitizePhone,
+} from "../lib/formValidation";
 
 const fieldClassName =
   "mt-2 min-h-12 min-w-0 w-full rounded-xl border border-input bg-background px-4 py-3 text-foreground shadow-sm transition-[border-color,box-shadow] placeholder:text-muted-foreground/75 hover:border-primary/35 focus:border-primary focus:ring-2 focus:ring-primary/20";
@@ -98,6 +102,7 @@ export function CareersPage({ site }: { site: SiteConfig }) {
   >("idle");
   const [submitMessage, setSubmitMessage] = useState("");
   const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
+  const clientRequestIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (isFormOpen) formTitleRef.current?.focus();
@@ -123,6 +128,10 @@ export function CareersPage({ site }: { site: SiteConfig }) {
     try {
       const formElement = event.currentTarget;
       const form = new FormData(formElement);
+      const clientRequestId =
+        clientRequestIdRef.current ?? createClientRequestId();
+      clientRequestIdRef.current = clientRequestId;
+      form.set("clientRequestId", clientRequestId);
       const response = await fetch("/api/forms/careers", {
         method: "POST",
         body: form,
@@ -130,6 +139,8 @@ export function CareersPage({ site }: { site: SiteConfig }) {
       const result = (await response.json().catch(() => null)) as {
         ok?: boolean;
         error?: string;
+        trackingNumber?: string;
+        notificationSent?: boolean;
       } | null;
 
       if (!response.ok || !result?.ok) {
@@ -140,9 +151,14 @@ export function CareersPage({ site }: { site: SiteConfig }) {
 
       formElement.reset();
       setArea("");
+      clientRequestIdRef.current = null;
       setSubmitStatus("success");
       setSubmitMessage(
-        "Recibimos tu postulación. El equipo de selección la revisará."
+        result?.trackingNumber
+          ? result.notificationSent === false
+            ? `Tu postulación quedó radicada con el número ${result.trackingNumber}. La confirmación por correo está pendiente.`
+            : `Tu postulación quedó radicada con el número ${result.trackingNumber}. Te enviamos la confirmación por correo.`
+          : "Recibimos tu postulación. El equipo de selección la revisará."
       );
     } catch (error) {
       setSubmitStatus("error");

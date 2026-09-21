@@ -72,7 +72,6 @@ export { HomePage } from "./pages/HomePage";
 export { AboutPage } from "./pages/AboutPage";
 export { AlliesPage } from "./pages/AlliesPage";
 export { CulturePage } from "./pages/CulturePage";
-export { ContactPage } from "./pages/ContactPage";
 export { SuppliersPage } from "./pages/SuppliersPage";
 export { CareersPage } from "./pages/CareersPage";
 export { LegalPage } from "./pages/LegalPage";

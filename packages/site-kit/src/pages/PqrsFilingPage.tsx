@@ -32,6 +32,7 @@ import type { SiteConfig } from "../config/types";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { cn } from "../lib/cn";
 import {
+  createClientRequestId,
   isValidEmail,
   sanitizeDigits,
   sanitizePersonName,
@@ -177,6 +178,7 @@ export function PqrsFilingPage({ site }: { site: SiteConfig }) {
   >("idle");
   const [submissionMessage, setSubmissionMessage] = useState("");
   const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
+  const clientRequestIdRef = useRef<string | null>(null);
   const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
   const reviewRef = useRef<HTMLDivElement | null>(null);
 
@@ -361,6 +363,10 @@ export function PqrsFilingPage({ site }: { site: SiteConfig }) {
       for (const [key, value] of Object.entries(form)) {
         body.append(key, String(value));
       }
+      const clientRequestId =
+        clientRequestIdRef.current ?? createClientRequestId();
+      clientRequestIdRef.current = clientRequestId;
+      body.append("clientRequestId", clientRequestId);
       for (const file of attachments) body.append("attachments", file);
       const response = await fetch("/api/forms/pqrs", {
         method: "POST",
@@ -369,6 +375,8 @@ export function PqrsFilingPage({ site }: { site: SiteConfig }) {
       const result = (await response.json().catch(() => null)) as {
         ok?: boolean;
         error?: string;
+        trackingNumber?: string;
+        notificationSent?: boolean;
       } | null;
       if (!response.ok || !result?.ok) {
         throw new Error(
@@ -378,7 +386,11 @@ export function PqrsFilingPage({ site }: { site: SiteConfig }) {
 
       setSubmissionStatus("success");
       setSubmissionMessage(
-        "Tu PQRS fue aceptada por el servicio de envío de correo. Este envío no genera un radicado oficial."
+        result?.trackingNumber
+          ? result.notificationSent === false
+            ? `Tu PQRS quedó radicada con el número ${result.trackingNumber}. La confirmación por correo está pendiente.`
+            : `Tu PQRS quedó radicada con el número ${result.trackingNumber}. Te enviamos la confirmación por correo.`
+          : "Tu PQRS fue recibida y quedó guardada para gestión."
       );
     } catch (error) {
       setSubmissionStatus("error");

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, FileText, MessageSquareText, Scale } from "lucide-react";
+import { ArrowRight, FileText, MessageSquareText } from "lucide-react";
 import type { SiteConfig } from "../config/types";
 import { PageIntro } from "../components/PageIntro";
 import { RevealGroup } from "../components/RevealGroup";
@@ -9,12 +9,6 @@ import { RevealGroup } from "../components/RevealGroup";
  */
 export function LegalPage({ site }: { site: SiteConfig }) {
   const destinations = [
-    {
-      href: "/legal/codigo-de-etica",
-      title: site.ethics.title,
-      description: site.ethics.description,
-      icon: Scale,
-    },
     {
       href: "/legal/tratamiento-de-datos",
       title: site.dataPolicy.title,
@@ -34,10 +28,7 @@ export function LegalPage({ site }: { site: SiteConfig }) {
       <PageIntro copy={site.legal} />
 
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
-        <RevealGroup
-          className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
-          stagger={0.1}
-        >
+        <RevealGroup className="grid gap-6 md:grid-cols-2" stagger={0.1}>
           {destinations.map((destination) => (
             <Link
               key={destination.href}

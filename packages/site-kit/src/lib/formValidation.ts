@@ -66,6 +66,16 @@ export function isValidEmail(value: string) {
   return EMAIL_PATTERN.test(value.trim());
 }
 
+export function createClientRequestId() {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function sanitizePhone(value: string) {
   return value.replace(/\D/g, "");
 }
