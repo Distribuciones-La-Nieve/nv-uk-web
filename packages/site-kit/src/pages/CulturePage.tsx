@@ -64,11 +64,11 @@ export function CulturePage({ site }: { site: SiteConfig }) {
               Un buen consejo hace crecer tu negocio
             </h2>
             <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-              Elige una tarjeta y deja que {character} te acompañe con una idea
+              Gira una tarjeta y deja que {character} te acompañe con una idea
               para poner en práctica.
             </p>
           </div>
-          <CultureTopics topics={site.culture.topics} site={site.id} />
+          <CultureTopics site={site.id} />
         </div>
       </section>
     </>
