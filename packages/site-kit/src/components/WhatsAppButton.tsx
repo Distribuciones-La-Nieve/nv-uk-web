@@ -14,6 +14,18 @@ export function WhatsAppButton({ site }: { site: SiteConfig }) {
   if (!site.contact.phone) return null;
 
   const phone = toWhatsAppNumber(site.contact.phone);
+  const character =
+    site.id === "unimarka"
+      ? {
+          src: "/images/whatsapp-personaje-unimarka-v2.webp",
+          width: 190,
+          prompt: "Charla con Doña Ceci",
+        }
+      : {
+          src: "/images/whatsapp-personaje.webp",
+          width: 176,
+          prompt: "Charla con Don Tulio",
+        };
   const message = encodeURIComponent(
     `Hola, quiero comunicarme con ${site.name}.`
   );
@@ -39,16 +51,16 @@ export function WhatsAppButton({ site }: { site: SiteConfig }) {
           </span>
           <span className={styles.characterFace}>
             <Image
-              src="/images/whatsapp-personaje.webp"
+              src={character.src}
               alt=""
-              width={176}
+              width={character.width}
               height={256}
               className={styles.character}
             />
           </span>
         </span>
         <span className={styles.characterPrompt} aria-hidden="true">
-          Charla con Don Tulio
+          {character.prompt}
         </span>
         <span className={styles.label} aria-hidden="true">
           WhatsApp

@@ -14,7 +14,7 @@ function visibleColumns() {
   return 1;
 }
 
-/** Reveals La Nieve's extended ally catalogue in viewport-sized rows. */
+/** Reveals an ally catalogue in viewport-sized rows. */
 export function AlliesLogoGrid({
   children,
   className,

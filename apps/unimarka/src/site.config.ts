@@ -36,6 +36,21 @@ function brandLogo(
   };
 }
 
+function commercialAllyLogo(
+  commercialHouse: string,
+  name: string,
+  src: string,
+  width: number,
+  height: number,
+  displayWidth = 160,
+  visualScale?: number
+) {
+  return {
+    ...brandLogo(name, src, width, height, displayWidth, visualScale),
+    commercialHouse,
+  };
+}
+
 const unimarkaBrandLogos = [
   brandLogo("Unilever", "/brands/unilever.png", 1280, 720, 142),
   brandLogo("Brinsa", "/brands/brinsa.png", 2125, 791, 184),
@@ -351,54 +366,237 @@ export const siteConfig = {
     items: [
       // Relevancia editorial en Colombia: eleccion FMCG publicada por Kantar,
       // reconocimiento masivo y, despues, marcas especializadas/institucionales.
-      brandLogo("Refisal", "/brands/allies-page/refisal.webp", 600, 376),
-      brandLogo("Fruco", "/brands/allies-page/fruco.webp", 491, 400),
-      brandLogo("Familia", "/brands/allies-page/familia.webp", 600, 372),
-      brandLogo("Dove", "/brands/allies-page/dove.webp", 550, 400),
-      brandLogo("Vive 100", "/brands/allies-page/vive100.webp", 600, 210),
-      brandLogo("Nosotras", "/brands/allies-page/nosotras.webp", 452, 400),
-      brandLogo("Maizena", "/brands/allies-page/maizena.webp", 600, 232),
-      brandLogo("Pequeñín", "/brands/allies-page/pequenin.webp", 549, 400),
-      brandLogo("TENA", "/brands/allies-page/tena.webp", 600, 368),
-      brandLogo("Trululu", "/brands/allies-page/trululu.webp", 600, 222),
-      brandLogo("Axe", "/brands/allies-page/axe.webp", 600, 189),
-      brandLogo("Savital", "/brands/allies-page/savital.webp", 600, 282),
-      brandLogo("Blancox", "/brands/allies-page/blancox.webp", 600, 393),
-      brandLogo("Vanish", "/brands/allies-page/vanish.webp", 515, 400),
-      brandLogo("Lux", "/brands/allies-page/lux.webp", 600, 251),
-      brandLogo("Aromatel", "/brands/allies-page/aromatel.webp", 526, 400),
-      brandLogo("Mirringo", "/brands/allies-page/mirringo.webp", 600, 146),
-      brandLogo("Ringo", "/brands/allies-page/ringo.webp", 600, 178),
-      brandLogo("Súper", "/brands/allies-page/super.webp", 600, 333),
-      brandLogo("Big Bom", "/brands/allies-page/big-bom.webp", 430, 400),
-      brandLogo("Tork", "/brands/allies-page/tork.webp", 600, 340),
-      brandLogo("Petys", "/brands/allies-page/petys.webp", 600, 378),
-      brandLogo("Pomys", "/brands/allies-page/pomys.webp", 600, 326),
-      brandLogo("Woolite", "/brands/allies-page/woolite.webp", 600, 284),
-      brandLogo("Nutriss", "/brands/allies-page/nutriss.webp", 600, 318),
-      brandLogo("Ricostilla", "/brands/allies-page/ricostilla.webp", 554, 400),
-      brandLogo(
+      commercialAllyLogo(
+        "Brinsa",
+        "Refisal",
+        "/brands/allies-page/refisal.webp",
+        600,
+        376
+      ),
+      commercialAllyLogo(
+        "Unilever",
+        "Fruco",
+        "/brands/allies-page/fruco.webp",
+        491,
+        400
+      ),
+      commercialAllyLogo(
+        "Essity / Grupo Familia",
+        "Familia",
+        "/brands/allies-page/familia.webp",
+        600,
+        372
+      ),
+      commercialAllyLogo(
+        "Unilever",
+        "Dove",
+        "/brands/allies-page/dove.webp",
+        550,
+        400
+      ),
+      commercialAllyLogo(
+        "Quala",
+        "Vive 100",
+        "/brands/allies-page/vive100.webp",
+        600,
+        210
+      ),
+      commercialAllyLogo(
+        "Essity / Grupo Familia",
+        "Nosotras",
+        "/brands/allies-page/nosotras.webp",
+        452,
+        400
+      ),
+      commercialAllyLogo(
+        "Unilever",
+        "Maizena",
+        "/brands/allies-page/maizena.webp",
+        600,
+        232
+      ),
+      commercialAllyLogo(
+        "Essity / Grupo Familia",
+        "Pequeñín",
+        "/brands/allies-page/pequenin.webp",
+        549,
+        400
+      ),
+      commercialAllyLogo(
+        "Essity / Grupo Familia",
+        "TENA",
+        "/brands/allies-page/tena.webp",
+        600,
+        368
+      ),
+      commercialAllyLogo(
+        "Super de Alimentos",
+        "Trululu",
+        "/brands/allies-page/trululu.webp",
+        600,
+        222
+      ),
+      commercialAllyLogo(
+        "Unilever",
+        "Axe",
+        "/brands/allies-page/axe.webp",
+        600,
+        189
+      ),
+      commercialAllyLogo(
+        "Unilever",
+        "Savital",
+        "/brands/allies-page/savital.webp",
+        600,
+        282
+      ),
+      commercialAllyLogo(
+        "Brinsa",
+        "Blancox",
+        "/brands/allies-page/blancox.webp",
+        600,
+        393
+      ),
+      commercialAllyLogo(
+        "Reckitt",
+        "Vanish",
+        "/brands/allies-page/vanish.webp",
+        515,
+        400
+      ),
+      commercialAllyLogo(
+        "Unilever",
+        "Lux",
+        "/brands/allies-page/lux.webp",
+        600,
+        251
+      ),
+      commercialAllyLogo(
+        "Alicorp",
+        "Aromatel",
+        "/brands/allies-page/aromatel.webp",
+        526,
+        400
+      ),
+      commercialAllyLogo(
+        "Grupo BIOS",
+        "Mirringo",
+        "/brands/allies-page/mirringo.webp",
+        600,
+        146
+      ),
+      commercialAllyLogo(
+        "Grupo BIOS",
+        "Ringo",
+        "/brands/allies-page/ringo.webp",
+        600,
+        178
+      ),
+      commercialAllyLogo(
+        "Super de Alimentos",
+        "Súper",
+        "/brands/allies-page/super.webp",
+        600,
+        333
+      ),
+      commercialAllyLogo(
+        "Americandy / Dulces La Americana",
+        "Big Bom",
+        "/brands/allies-page/big-bom.webp",
+        430,
+        400
+      ),
+      commercialAllyLogo(
+        "Essity / Grupo Familia",
+        "Tork",
+        "/brands/allies-page/tork.webp",
+        600,
+        340
+      ),
+      commercialAllyLogo(
+        "CanAmor",
+        "Petys",
+        "/brands/allies-page/petys.webp",
+        600,
+        378
+      ),
+      commercialAllyLogo(
+        "Essity / Grupo Familia",
+        "Pomys",
+        "/brands/allies-page/pomys.webp",
+        600,
+        326
+      ),
+      commercialAllyLogo(
+        "Essential Home",
+        "Woolite",
+        "/brands/allies-page/woolite.webp",
+        600,
+        284
+      ),
+      commercialAllyLogo(
+        "Grupo BIOS",
+        "Nutriss",
+        "/brands/allies-page/nutriss.webp",
+        600,
+        318
+      ),
+      commercialAllyLogo(
+        "Quala",
+        "Ricostilla",
+        "/brands/allies-page/ricostilla.webp",
+        554,
+        400
+      ),
+      commercialAllyLogo(
+        "Soberana",
         "La Soberana",
         "/brands/allies-page/la-soberana.webp",
         600,
         249
       ),
-      brandLogo("Saviloe", "/brands/allies-page/saviloe.webp", 600, 217),
-      brandLogo("NutriBela", "/brands/allies-page/nutribela.webp", 600, 193),
-      brandLogo(
+      commercialAllyLogo(
+        "Quala",
+        "Saviloe",
+        "/brands/allies-page/saviloe.webp",
+        600,
+        217
+      ),
+      commercialAllyLogo(
+        "Quala",
+        "NutriBela",
+        "/brands/allies-page/nutribela.webp",
+        600,
+        193
+      ),
+      commercialAllyLogo(
+        "Brinsa",
         "Blancox Lozacrem",
         "/brands/allies-page/blancox-lozacrem.webp",
         600,
         227
       ),
-      brandLogo("Sanpic", "/brands/allies-page/sanpic.webp", 526, 400),
-      brandLogo(
+      commercialAllyLogo(
+        "Reckitt",
+        "Sanpic",
+        "/brands/allies-page/sanpic.webp",
+        526,
+        400
+      ),
+      commercialAllyLogo(
+        "Essity / Grupo Familia",
         "Familia Institucional",
         "/brands/allies-page/familia-institucional.webp",
         600,
         371
       ),
-      brandLogo("Americandy", "/brands/allies-page/americandy.webp", 600, 255),
+      commercialAllyLogo(
+        "Americandy / Dulces La Americana",
+        "Americandy",
+        "/brands/allies-page/americandy.webp",
+        600,
+        255
+      ),
     ],
     logos: unimarkaBrandLogos,
     advertisements: unimarkaAdvertisements,

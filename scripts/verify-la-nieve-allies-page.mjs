@@ -12,46 +12,42 @@ const homeHtml = readFileSync(
 
 const expectedOrder = [
   "061",
+  "057",
+  "060",
   "010",
+  "006",
+  "004",
+  "003",
+  "008",
+  "002",
+  "012",
+  "011",
+  "014",
   "056",
   "016",
   "021",
   "015",
   "018",
-  "006",
-  "004",
-  "003",
-  "008",
-  "054",
-  "035",
-  "036",
   "022",
   "017",
-  "057",
-  "060",
   "019",
-  "002",
-  "012",
-  "050",
+  "023",
+  "020",
+  "054",
+  "055",
+  "035",
+  "036",
+  "039",
+  "038",
+  "037",
   "043",
   "044",
   "046",
+  "045",
+  "047",
   "029",
   "028",
   "027",
-  "039",
-  "011",
-  "014",
-  "048",
-  "055",
-  "023",
-  "020",
-  "038",
-  "037",
-  "045",
-  "047",
-  "059",
-  "049",
 ];
 
 const minimumOpticalScales = new Map([
@@ -63,9 +59,18 @@ const minimumOpticalScales = new Map([
   ["021", 1.6],
   ["022", 1.5],
   ["023", 1.5],
-  ["048", 1.7],
-  ["059", 1.7],
 ]);
+
+const expectedCommercialHouses = [
+  "Alpina",
+  "Colgate-Palmolive",
+  "BAT",
+  "Nestlé Alimentos",
+  "Levapan",
+  "Nestlé Purina",
+  "Harinera del Valle",
+  "Softys",
+];
 
 function renderedImages(html) {
   return html.match(/<img\b[^>]*>/g) ?? [];
@@ -84,12 +89,22 @@ const allyLogoStages =
 assert.deepEqual(
   renderedOrder,
   expectedOrder,
-  "La página debe presentar las 41 marcas en el orden editorial aprobado"
+  "La página debe presentar las 37 marcas en el orden editorial aprobado"
+);
+
+const renderedCommercialHouses = [
+  ...alliesHtml.matchAll(/data-commercial-house="([^"]+)"/g),
+].map((match) => match[1]);
+
+assert.deepEqual(
+  renderedCommercialHouses,
+  expectedCommercialHouses,
+  "Las marcas deben quedar agrupadas por casa comercial"
 );
 
 assert.equal(
   allyLogoStages.length,
-  41,
+  37,
   "Cada logo debe tener una zona visual independiente del texto"
 );
 for (const stage of allyLogoStages) {
@@ -117,7 +132,7 @@ assert.match(
 );
 assert.equal(
   (alliesHtml.match(/data-ally-card="true"/g) ?? []).length,
-  41,
+  37,
   "Cada logo debe participar individualmente en la aparición progresiva"
 );
 assert.equal(

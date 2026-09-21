@@ -131,6 +131,11 @@ export interface SiteAlly {
   readonly visualScale?: number;
 }
 
+export interface SiteCommercialAlly extends SiteAlly {
+  /** Casa comercial o grupo propietario que reúne esta marca en el catálogo. */
+  readonly commercialHouse: string;
+}
+
 export interface SiteBrandLogo extends SiteAlly {
   readonly image: SiteImageConfig;
 }
@@ -244,7 +249,7 @@ export interface SiteConfig {
     readonly values: readonly SiteValue[];
   };
   readonly allies: SitePageCopy & {
-    readonly items: readonly SiteAlly[];
+    readonly items: readonly SiteCommercialAlly[];
     readonly logos: readonly SiteBrandLogo[];
     readonly advertisements: readonly SiteAdvertisingCampaign[];
   };

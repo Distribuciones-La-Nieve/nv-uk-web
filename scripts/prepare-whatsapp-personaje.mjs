@@ -3,24 +3,36 @@ import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
 const root = new URL("../", import.meta.url);
-const source = new URL("assets/personajes final-02.png", root);
-const destinations = ["la-nieve", "unimarka"].map(
-  (brand) => new URL(`apps/${brand}/public/images/`, root)
-);
+const sources = [
+  ["la-nieve", "assets/personajes final-02.png"],
+  ["unimarka", "assets/personajes-final-06.png"],
+].map(([brand, sourcePath]) => ({
+  brand,
+  source: new URL(sourcePath, root),
+  destination: new URL(`apps/${brand}/public/images/`, root),
+  output:
+    brand === "unimarka"
+      ? "whatsapp-personaje-unimarka-v2.webp"
+      : "whatsapp-personaje.webp",
+}));
 
-await Promise.all(destinations.map((directory) => access(directory)));
+await Promise.all(
+  sources.flatMap(({ source, destination }) => [
+    access(source),
+    access(destination),
+  ])
+);
 
 // Trim transparent margins before resizing, preserving the whole character.
-const { data, info } = await sharp(fileURLToPath(source))
-  .trim()
-  .resize({ height: 256, withoutEnlargement: true })
-  .webp({ quality: 85, effort: 6 })
-  .toBuffer({ resolveWithObject: true });
+for (const { brand, source, destination, output } of sources) {
+  const { data, info } = await sharp(fileURLToPath(source))
+    .trim()
+    .resize({ height: 256, withoutEnlargement: true })
+    .webp({ quality: 85, effort: 6 })
+    .toBuffer({ resolveWithObject: true });
 
-for (const directory of destinations) {
-  await writeFile(new URL("whatsapp-personaje.webp", directory), data);
+  await writeFile(new URL(output, destination), data);
+  console.log(
+    `${brand}: ${output} ${info.width}x${info.height}, ${info.size} bytes`
+  );
 }
-
-console.log(
-  `whatsapp-personaje.webp: ${info.width}x${info.height}, ${info.size} bytes per app`
-);

@@ -46,6 +46,7 @@ export type {
   SiteDataPolicyDocumentId,
   SiteDataPolicySection,
   SiteAlly,
+  SiteCommercialAlly,
   SiteAdvertisingCampaign,
   SiteAdvertisingImage,
   SiteAdvertisingOrientation,

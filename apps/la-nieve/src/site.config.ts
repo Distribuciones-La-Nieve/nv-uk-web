@@ -95,6 +95,7 @@ const laNieveBrandLogos = [
 ] as const;
 
 function extractedAllyLogo(
+  commercialHouse: string,
   id: string,
   name: string,
   width: number,
@@ -102,56 +103,138 @@ function extractedAllyLogo(
   displayWidth = 160,
   visualScale?: number
 ) {
-  return brandLogo(
-    name,
-    `/brands/allies-page/logo-${id}.webp`,
-    width,
-    height,
-    displayWidth,
-    visualScale
-  );
+  return {
+    ...brandLogo(
+      name,
+      `/brands/allies-page/logo-${id}.webp`,
+      width,
+      height,
+      displayWidth,
+      visualScale
+    ),
+    commercialHouse,
+  };
 }
 
 /** Catálogo completo exclusivo de la página Aliados comerciales. */
 const laNieveAlliesPageLogos = [
-  extractedAllyLogo("061", "Alpina", 600, 314, 178),
-  extractedAllyLogo("010", "Colgate", 400, 400, 156, 1.75),
-  extractedAllyLogo("056", "Vuse", 600, 188, 196, 1.08),
-  extractedAllyLogo("016", "Maggi", 400, 400, 136),
-  extractedAllyLogo("021", "Nestlé", 400, 400, 150, 1.65),
-  extractedAllyLogo("015", "Milo", 400, 400, 136),
-  extractedAllyLogo("018", "Nescafé", 400, 400, 154, 2),
-  extractedAllyLogo("006", "Palmolive", 600, 306, 188, 1.05),
-  extractedAllyLogo("004", "Suavitel", 400, 400, 144, 1.55),
-  extractedAllyLogo("003", "Axion", 400, 400, 136),
-  extractedAllyLogo("008", "Protex", 400, 400, 150, 2),
-  extractedAllyLogo("054", "San Jorge", 400, 400, 142),
-  extractedAllyLogo("035", "Dog Chow", 400, 400, 144, 1.1),
-  extractedAllyLogo("036", "Cat Chow", 600, 297, 160, 1.18),
-  extractedAllyLogo("022", "Saltinas", 400, 400, 144, 1.55),
-  extractedAllyLogo("017", "Klim", 400, 400, 136),
-  extractedAllyLogo("057", "Bon Yurt", 400, 400, 144, 1.1),
-  extractedAllyLogo("060", "Yogo Yogo", 400, 400, 142, 1.05),
-  extractedAllyLogo("019", "La Lechera", 400, 400, 144, 1.3),
-  extractedAllyLogo("002", "Fabuloso", 400, 400, 136),
-  extractedAllyLogo("012", "Ajax", 498, 400, 152, 1.05),
-  extractedAllyLogo("043", "Haz de Oros", 375, 400, 140, 1.05),
-  extractedAllyLogo("044", "Pastas La Muñeca", 510, 400, 154, 1.2),
-  extractedAllyLogo("046", "Riquísimo", 600, 371, 190, 1.05),
-  extractedAllyLogo("029", "Babysec", 600, 366, 180, 1.08),
-  extractedAllyLogo("028", "Ladysoft", 600, 364, 186, 1.08),
-  extractedAllyLogo("027", "Elite Profesional", 600, 365, 188, 1.08),
-  extractedAllyLogo("039", "Felix", 449, 400, 150, 1.05),
-  extractedAllyLogo("011", "Speed Stick", 400, 400, 142, 1.2),
-  extractedAllyLogo("014", "Lady Speed Stick", 510, 400, 150, 1.7),
-  extractedAllyLogo("055", "Gel'hada", 600, 290, 182, 1.1),
-  extractedAllyLogo("023", "Nestum", 400, 400, 144, 1.6),
-  extractedAllyLogo("020", "Fitness", 400, 400, 148, 1.5),
-  extractedAllyLogo("038", "Alpo", 478, 400, 140, 1.22),
-  extractedAllyLogo("037", "Gatsy", 400, 400, 136, 1.05),
-  extractedAllyLogo("045", "Pastas San Remo", 412, 400, 152, 1.1),
-  extractedAllyLogo("047", "Harina La Americana", 600, 157, 194, 1.08),
-  extractedAllyLogo("059", "Baby Soft", 400, 400, 140, 1.8),
+  extractedAllyLogo("Alpina", "061", "Alpina", 600, 314, 178),
+  extractedAllyLogo("Colgate-Palmolive", "010", "Colgate", 400, 400, 156, 1.75),
+  extractedAllyLogo("BAT", "056", "Vuse", 600, 188, 196, 1.08),
+  extractedAllyLogo("Nestlé Alimentos", "016", "Maggi", 400, 400, 136),
+  extractedAllyLogo("Nestlé Alimentos", "021", "Nestlé", 400, 400, 150, 1.65),
+  extractedAllyLogo("Nestlé Alimentos", "015", "Milo", 400, 400, 136),
+  extractedAllyLogo("Nestlé Alimentos", "018", "Nescafé", 400, 400, 154, 2),
+  extractedAllyLogo(
+    "Colgate-Palmolive",
+    "006",
+    "Palmolive",
+    600,
+    306,
+    188,
+    1.05
+  ),
+  extractedAllyLogo(
+    "Colgate-Palmolive",
+    "004",
+    "Suavitel",
+    400,
+    400,
+    144,
+    1.55
+  ),
+  extractedAllyLogo("Colgate-Palmolive", "003", "Axion", 400, 400, 136),
+  extractedAllyLogo("Colgate-Palmolive", "008", "Protex", 400, 400, 150, 2),
+  extractedAllyLogo("Levapan", "054", "San Jorge", 400, 400, 142),
+  extractedAllyLogo("Nestlé Purina", "035", "Dog Chow", 400, 400, 144, 1.1),
+  extractedAllyLogo("Nestlé Purina", "036", "Cat Chow", 600, 297, 160, 1.18),
+  extractedAllyLogo("Nestlé Alimentos", "022", "Saltinas", 400, 400, 144, 1.55),
+  extractedAllyLogo("Nestlé Alimentos", "017", "Klim", 400, 400, 136),
+  extractedAllyLogo("Alpina", "057", "Bon Yurt", 400, 400, 144, 1.1),
+  extractedAllyLogo("Alpina", "060", "Yogo Yogo", 400, 400, 142, 1.05),
+  extractedAllyLogo(
+    "Nestlé Alimentos",
+    "019",
+    "La Lechera",
+    400,
+    400,
+    144,
+    1.3
+  ),
+  extractedAllyLogo("Colgate-Palmolive", "002", "Fabuloso", 400, 400, 136),
+  extractedAllyLogo("Colgate-Palmolive", "012", "Ajax", 498, 400, 152, 1.05),
+  extractedAllyLogo(
+    "Harinera del Valle",
+    "043",
+    "Haz de Oros",
+    375,
+    400,
+    140,
+    1.05
+  ),
+  extractedAllyLogo(
+    "Harinera del Valle",
+    "044",
+    "Pastas La Muñeca",
+    510,
+    400,
+    154,
+    1.2
+  ),
+  extractedAllyLogo(
+    "Harinera del Valle",
+    "046",
+    "Riquísimo",
+    600,
+    371,
+    190,
+    1.05
+  ),
+  extractedAllyLogo("Softys", "029", "Babysec", 600, 366, 180, 1.08),
+  extractedAllyLogo("Softys", "028", "Ladysoft", 600, 364, 186, 1.08),
+  extractedAllyLogo("Softys", "027", "Elite Profesional", 600, 365, 188, 1.08),
+  extractedAllyLogo("Nestlé Purina", "039", "Felix", 449, 400, 150, 1.05),
+  extractedAllyLogo(
+    "Colgate-Palmolive",
+    "011",
+    "Speed Stick",
+    400,
+    400,
+    142,
+    1.2
+  ),
+  extractedAllyLogo(
+    "Colgate-Palmolive",
+    "014",
+    "Lady Speed Stick",
+    510,
+    400,
+    150,
+    1.7
+  ),
+  extractedAllyLogo("Levapan", "055", "Gel'hada", 600, 290, 182, 1.1),
+  extractedAllyLogo("Nestlé Alimentos", "023", "Nestum", 400, 400, 144, 1.6),
+  extractedAllyLogo("Nestlé Alimentos", "020", "Fitness", 400, 400, 148, 1.5),
+  extractedAllyLogo("Nestlé Purina", "038", "Alpo", 478, 400, 140, 1.22),
+  extractedAllyLogo("Nestlé Purina", "037", "Gatsy", 400, 400, 136, 1.05),
+  extractedAllyLogo(
+    "Harinera del Valle",
+    "045",
+    "Pastas San Remo",
+    412,
+    400,
+    152,
+    1.1
+  ),
+  extractedAllyLogo(
+    "Harinera del Valle",
+    "047",
+    "Harina La Americana",
+    600,
+    157,
+    194,
+    1.08
+  ),
 ] as const;
 
 function advertisingCampaign(
@@ -397,12 +480,12 @@ export const siteConfig = {
     description:
       "En Distribuciones La Nieve entendemos el día a día de tiendas, supermercados y aliados comerciales. Por eso trabajamos para que nunca falte el producto correcto, en el momento correcto.",
     image: {
-      src: "/images/cliente-entrega-nieve-20260918.png",
-      alt: "Comerciante recibiendo una entrega de La Nieve en su tienda",
-      width: 1448,
-      height: 1086,
+      src: "/images/cliente-nieve-hero.png",
+      alt: "Cliente recibiendo una caja de Distribuciones La Nieve en su tienda",
+      width: 1254,
+      height: 1254,
       treatment: "photo",
-      objectPosition: "40% center",
+      objectPosition: "center",
     },
     points: [
       {
@@ -425,8 +508,7 @@ export const siteConfig = {
   stats: {
     eyebrow: "Cobertura y operación",
     title: "Nuestra operación nacional",
-    description:
-      "Cobertura territorial, volumen de operaciones y equipo humano que respaldan nuestro servicio.",
+    description: "Cobertura territorial.",
     // Fuente: assets/mapaNV.png. El nombre público versionado evita servir
     // una versión anterior desde la caché del navegador o del optimizador.
     image: {

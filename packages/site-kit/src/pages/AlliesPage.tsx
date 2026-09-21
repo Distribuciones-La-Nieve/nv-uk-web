@@ -1,5 +1,5 @@
 import { ImageIcon } from "lucide-react";
-import type { SiteAlly, SiteConfig } from "../config/types";
+import type { SiteCommercialAlly, SiteConfig } from "../config/types";
 import { AdvertisingShowcase } from "../components/AdvertisingShowcase";
 import { AllyLogo } from "../components/AllyLogo";
 import { AlliesLogoGrid } from "../components/AlliesLogoGrid";
@@ -7,7 +7,7 @@ import { PageIntro } from "../components/PageIntro";
 import { RevealGroup } from "../components/RevealGroup";
 
 /** Builds a compact, readable placeholder mark from an ally name. */
-function getAllyInitials(ally: SiteAlly) {
+function getAllyInitials(ally: SiteCommercialAlly) {
   return ally.name
     .split(/[\s–—-]+/)
     .filter(Boolean)
@@ -15,6 +15,35 @@ function getAllyInitials(ally: SiteAlly) {
     .map((word) => word.charAt(0))
     .join("")
     .toUpperCase();
+}
+
+function getCommercialHouseId(name: string) {
+  return `commercial-house-${name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")}`;
+}
+
+function groupAlliesByCommercialHouse(items: readonly SiteCommercialAlly[]) {
+  const groups = new Map<string, SiteCommercialAlly[]>();
+
+  for (const ally of items) {
+    const house = ally.commercialHouse;
+    const group = groups.get(house);
+
+    if (group) {
+      group.push(ally);
+    } else {
+      groups.set(house, [ally]);
+    }
+  }
+
+  return Array.from(groups, ([name, groupItems]) => ({
+    name,
+    items: groupItems,
+  }));
 }
 
 /**
@@ -25,7 +54,8 @@ export function AlliesPage({ site }: { site: SiteConfig }) {
   const logoGridClassName = "flex flex-wrap justify-center";
   const logoStageClassName =
     "flex h-28 w-full items-center justify-center overflow-hidden dark:rounded-2xl dark:bg-white/90 dark:px-4 dark:py-3";
-  const allyCards = site.allies.items.map((ally) => (
+  const allyGroups = groupAlliesByCommercialHouse(site.allies.items);
+  const renderAllyCard = (ally: SiteCommercialAlly) => (
     <article
       key={ally.name}
       data-ally-card="true"
@@ -56,14 +86,14 @@ export function AlliesPage({ site }: { site: SiteConfig }) {
           />
         </div>
       )}
-      <h2 className="mt-3 text-sm font-bold leading-snug text-foreground sm:text-base">
+      <h3 className="mt-3 text-sm font-bold leading-snug text-foreground sm:text-base">
         {ally.name}
-      </h2>
+      </h3>
       {!ally.image && (
         <p className="mt-1 text-xs text-muted-foreground">Logotipo pendiente</p>
       )}
     </article>
-  ));
+  );
 
   return (
     <>
@@ -91,10 +121,32 @@ export function AlliesPage({ site }: { site: SiteConfig }) {
             Hoy hacen parte de nuestra historia y las representamos con orgullo
             en cada rincón a los que llegamos.
           </p>
+          <p className="mt-4 text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground"></p>
         </RevealGroup>
-        <AlliesLogoGrid className={logoGridClassName}>
-          {allyCards}
-        </AlliesLogoGrid>
+        <div className="space-y-14" data-commercial-houses="true">
+          {allyGroups.map((house) => {
+            const headingId = getCommercialHouseId(house.name);
+
+            return (
+              <section
+                key={house.name}
+                aria-labelledby={headingId}
+                className="border-t border-border pt-8 first:border-t-0 first:pt-0"
+                data-commercial-house={house.name}
+              >
+                <h2
+                  id={headingId}
+                  className="mb-5 text-2xl font-black tracking-tight text-foreground sm:text-3xl"
+                >
+                  {house.name}
+                </h2>
+                <AlliesLogoGrid className={logoGridClassName}>
+                  {house.items.map(renderAllyCard)}
+                </AlliesLogoGrid>
+              </section>
+            );
+          })}
+        </div>
       </section>
     </>
   );
