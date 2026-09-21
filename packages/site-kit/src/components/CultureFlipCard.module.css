@@ -1,0 +1,144 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--card);
+  box-shadow: 0 8px 28px #1029560c;
+  transition:
+    box-shadow 0.25s,
+    border-color 0.25s;
+}
+.card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 16px 36px #10295620;
+}
+.perspective {
+  perspective: 1400px;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+.rotator {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.22, 0.68, 0.2, 1);
+}
+.flipped {
+  transform: rotateY(180deg);
+}
+.face {
+  grid-area: 1 / 1;
+  min-width: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 1.25rem 1.25rem 0 0;
+  background: var(--card);
+  overflow: hidden;
+}
+.back {
+  transform: rotateY(180deg);
+}
+.media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #102956;
+}
+.poster,
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.brandScene {
+  background:
+    radial-gradient(ellipse at 22% 18%, #34b6d655, transparent 48%),
+    radial-gradient(circle at 88% 84%, #e4445255, transparent 40%),
+    linear-gradient(135deg, #204f83, #12334f);
+}
+.brandScene::before {
+  content: "";
+  position: absolute;
+  inset: 12% 9%;
+  border: 1px solid #ffffff1c;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.brandScene .poster,
+.brandScene .video {
+  position: relative;
+  z-index: 1;
+}
+.brandScene .poster {
+  position: absolute;
+}
+.copy {
+  padding: 1.5rem;
+}
+.eyebrow {
+  display: block;
+  color: var(--primary);
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.copy h3 {
+  margin-top: 0.75rem;
+  color: var(--card-foreground);
+  font-size: 1.18rem;
+  font-weight: 750;
+  line-height: 1.35;
+  text-wrap: balance;
+}
+.copy p {
+  margin-top: 1rem;
+  color: var(--muted-foreground);
+  font-size: 0.94rem;
+  line-height: 1.7;
+}
+.copy .invitation {
+  font-size: 0.85rem;
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 1.5rem;
+  padding: 1rem 0 1.25rem;
+  border-top: 1px solid var(--border);
+  color: var(--primary);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.toggle span {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.toggle:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 4px;
+  border-radius: 0.25rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rotator,
+  .card {
+    transition: none;
+  }
+}
+
+.card {
+  cursor: pointer;
+}
+.video {
+  pointer-events: none;
+}
