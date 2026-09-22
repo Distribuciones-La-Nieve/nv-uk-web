@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import type { SiteConfig } from "../config/types";
 import { useRevealAnimation } from "../hooks/useRevealAnimation";
 import { WarehouseMap } from "./WarehouseMap";
@@ -10,19 +9,6 @@ export function Stats({ site }: { site: SiteConfig }) {
   const contentRef = useRevealAnimation<HTMLDivElement>({ type: "fadeUp" });
 
   const isUnimarka = site.id === "unimarka";
-  const mapCharacter = isUnimarka
-    ? {
-        src: "/images/personajes-final-07.png",
-        alt: "Personaje de Unimarka señalando el mapa de bodegas",
-        width: 1081,
-        height: 1081,
-      }
-    : {
-        src: "/images/personajes-final-03.png",
-        alt: "Personaje de Distribuciones La Nieve señalando el mapa de bodegas",
-        width: 1080,
-        height: 1080,
-      };
   const coverage = site.stats.groups
     .flatMap((group) => group.figures)
     .find((figure) => figure.value.endsWith("%"));
@@ -104,19 +90,7 @@ export function Stats({ site }: { site: SiteConfig }) {
               </dl>
             </div>
             <div ref={figureRef} className="relative min-w-0">
-              <div className="relative z-10 mx-auto mb-[-1.5rem] flex w-full max-w-56 justify-center lg:absolute lg:left-0 lg:top-14 lg:mb-0 lg:w-60 lg:max-w-none lg:justify-start">
-                <Image
-                  src={mapCharacter.src}
-                  alt={mapCharacter.alt}
-                  width={mapCharacter.width}
-                  height={mapCharacter.height}
-                  sizes="(min-width: 1024px) 240px, 224px"
-                  className="h-auto w-56 object-contain lg:w-60"
-                />
-              </div>
-              <div className="lg:pl-40">
-                <WarehouseMap site={site.id} />
-              </div>
+              <WarehouseMap site={site.id} />
             </div>
           </div>
         </div>

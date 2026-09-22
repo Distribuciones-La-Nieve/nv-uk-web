@@ -34,6 +34,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_TEXT_LENGTH = 5000;
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+const MAX_MULTIPART_BYTES = 27 * 1024 * 1024;
 const ALLOWED_RESUME_EXTENSIONS = new Set([".pdf", ".doc", ".docx"]);
 const ALLOWED_SUPPLIER_EXTENSIONS = new Set([
   ".pdf",
@@ -79,8 +80,112 @@ const SUPPLIER_DISTRIBUTION_SEGMENTS = new Set([
   "Otros",
 ]);
 const YES_NO_OPTIONS = new Set(["Sí", "No"]);
+const CAREERS_STORED_FIELDS = [
+  "name",
+  "email",
+  "phone",
+  "city",
+  "area",
+  "profile",
+  "vacancyId",
+  "vacancyTitle",
+  "data-policy-acceptance",
+] as const;
+const SUPPLIERS_STORED_FIELDS = [
+  "supplierType",
+  "companyName",
+  "nit",
+  "contactName",
+  "phone",
+  "email",
+  "productCategory",
+  "brands",
+  "productTypes",
+  "marketPresence",
+  "isCompetitor",
+  "distributionSegment",
+  "servicesDescription",
+  "companyLocation",
+  "websiteUrl",
+  "data-policy-acceptance",
+] as const;
+const PQRS_STORED_FIELDS = [
+  "tipoSolicitud",
+  "relacion",
+  "causal",
+  "asunto",
+  "hechos",
+  "tipoSolicitante",
+  "nombres",
+  "apellidos",
+  "tipoDocumento",
+  "numeroDocumento",
+  "razonSocial",
+  "nit",
+  "repNombres",
+  "repApellidos",
+  "repTipoDocumento",
+  "repNumeroDocumento",
+  "email",
+  "emailConfirm",
+  "telefono",
+  "aceptaTratamiento",
+  "aceptaRespuestaCorreo",
+  "aceptaVeracidad",
+] as const;
 const PERSON_NAME_PATTERN = /^[\p{L}][\p{L}\s.'-]*$/u;
 const DIGITS_PATTERN = /^\d+$/;
+
+const FILE_SIGNATURES: Record<
+  string,
+  { contentType: string; matches: (buffer: Buffer) => boolean }
+> = {
+  ".pdf": {
+    contentType: "application/pdf",
+    matches: (buffer) => buffer.subarray(0, 5).toString("ascii") === "%PDF-",
+  },
+  ".png": {
+    contentType: "image/png",
+    matches: (buffer) =>
+      buffer
+        .subarray(0, 8)
+        .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+  },
+  ".jpg": {
+    contentType: "image/jpeg",
+    matches: (buffer) =>
+      buffer.length >= 3 &&
+      buffer[0] === 0xff &&
+      buffer[1] === 0xd8 &&
+      buffer[2] === 0xff,
+  },
+  ".jpeg": {
+    contentType: "image/jpeg",
+    matches: (buffer) =>
+      buffer.length >= 3 &&
+      buffer[0] === 0xff &&
+      buffer[1] === 0xd8 &&
+      buffer[2] === 0xff,
+  },
+  ".doc": {
+    contentType: "application/msword",
+    matches: matchesOleDocument,
+  },
+  ".ppt": {
+    contentType: "application/vnd.ms-powerpoint",
+    matches: matchesOleDocument,
+  },
+  ".docx": {
+    contentType:
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    matches: (buffer) => matchesZipDocument(buffer, "word/"),
+  },
+  ".pptx": {
+    contentType:
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    matches: (buffer) => matchesZipDocument(buffer, "ppt/"),
+  },
+};
 
 const FORM_KIND_LABELS: Record<FormKind, string> = {
   careers: "postulación laboral",
@@ -98,6 +203,23 @@ class FormRequestError extends Error {
   }
 }
 
+function matchesOleDocument(buffer: Buffer) {
+  return buffer
+    .subarray(0, 8)
+    .equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]));
+}
+
+function matchesZipDocument(buffer: Buffer, requiredDirectory: string) {
+  return (
+    buffer.length >= 4 &&
+    buffer[0] === 0x50 &&
+    buffer[1] === 0x4b &&
+    [0x03, 0x05, 0x07].includes(buffer[2] ?? -1) &&
+    [0x04, 0x06, 0x08].includes(buffer[3] ?? -1) &&
+    buffer.includes(Buffer.from(requiredDirectory, "ascii"))
+  );
+}
+
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -109,14 +231,39 @@ function text(value: FormDataEntryValue | string | null | undefined) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function formFields(
-  form: FormData,
-  excludedKeys: readonly string[] = []
-): Record<string, string> {
-  const excluded = new Set(excludedKeys);
+function assertSafeFormRequest(request: Request) {
+  const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
+  if (!contentType.startsWith("multipart/form-data;")) {
+    throw new FormRequestError("El formato de la solicitud no es válido.", 415);
+  }
+
+  const contentLength = request.headers.get("content-length");
+  if (contentLength) {
+    const bytes = Number(contentLength);
+    if (!Number.isSafeInteger(bytes) || bytes < 0) {
+      throw new FormRequestError("El tamaño de la solicitud no es válido.");
+    }
+    if (bytes > MAX_MULTIPART_BYTES) {
+      throw new FormRequestError(
+        "La solicitud supera el tamaño máximo permitido.",
+        413
+      );
+    }
+  }
+
+  if (request.headers.get("sec-fetch-site") === "cross-site") {
+    throw new FormRequestError(
+      "El origen de la solicitud no está permitido.",
+      403
+    );
+  }
+}
+
+function formFields(form: FormData, allowedKeys: readonly string[]) {
   const fields: Record<string, string> = {};
-  for (const [key, value] of form.entries()) {
-    if (excluded.has(key) || typeof value !== "string") continue;
+  for (const key of allowedKeys) {
+    const value = form.get(key);
+    if (typeof value !== "string") continue;
     fields[key] = value.trim();
   }
   return fields;
@@ -302,20 +449,44 @@ function renderConfirmationEmail(options: {
 function getRecipient(kind: FormKind, site: FormSiteId) {
   const siteKey = site === "la-nieve" ? "LA_NIEVE" : "UNIMARKA";
   const kindKey = kind.toUpperCase();
-  return (
-    process.env[`RESEND_${kindKey}_TO_${siteKey}`]?.trim() ||
-    process.env.RESEND_TEST_RECIPIENT?.trim() ||
-    "datalab6@lanieve.co"
-  );
+  const variableName = `RESEND_${kindKey}_TO_${siteKey}`;
+  const configuredRecipient = process.env[variableName]?.trim();
+  const recipient =
+    configuredRecipient ||
+    (process.env.NODE_ENV === "production"
+      ? ""
+      : process.env.RESEND_TEST_RECIPIENT?.trim());
+
+  if (!recipient || !EMAIL_PATTERN.test(recipient)) {
+    console.error(
+      `Destinatario de formularios no configurado: ${variableName}.`
+    );
+    throw new FormRequestError(
+      "El canal de notificación no está configurado.",
+      503
+    );
+  }
+  return recipient;
 }
 
 function getSender(site: FormSiteId) {
-  const email =
-    process.env.RESEND_FROM_EMAIL?.trim() || "onboarding@resend.dev";
+  const email = process.env.RESEND_FROM_EMAIL?.trim();
+  if (
+    process.env.NODE_ENV === "production" &&
+    (!email || !EMAIL_PATTERN.test(email))
+  ) {
+    console.error(
+      "Remitente de formularios no configurado: RESEND_FROM_EMAIL."
+    );
+    throw new FormRequestError(
+      "El canal de notificación no está configurado.",
+      503
+    );
+  }
   const name =
     process.env.RESEND_FROM_NAME?.trim() ||
     (site === "la-nieve" ? "Distribuciones La Nieve" : "Unimarka");
-  return `${name} <${email}>`;
+  return `${name} <${email || "onboarding@resend.dev"}>`;
 }
 
 async function fileToAttachment(file: File, allowedExtensions: Set<string>) {
@@ -327,19 +498,28 @@ async function fileToAttachment(file: File, allowedExtensions: Set<string>) {
       `El archivo ${file.name} supera el tamaño máximo de 10 MB.`
     );
   }
-  const extension = `.${file.name.split(".").pop()?.toLowerCase() ?? ""}`;
+  const extension = path.extname(file.name).toLowerCase();
   if (!allowedExtensions.has(extension)) {
     throw new FormRequestError(
       `El formato del archivo ${file.name} no está permitido.`
     );
   }
   const buffer = Buffer.from(await file.arrayBuffer());
-  const contentType = file.type || "application/octet-stream";
+  const signature = FILE_SIGNATURES[extension];
+  if (!signature?.matches(buffer)) {
+    throw new FormRequestError(
+      `El contenido del archivo ${file.name} no corresponde al formato indicado.`
+    );
+  }
+  const filename = path
+    .basename(file.name)
+    .replace(/[\r\n"]/g, "_")
+    .slice(0, 180);
   return {
-    filename: file.name,
+    filename,
     content: buffer.toString("base64"),
-    content_type: contentType,
-    contentType,
+    content_type: signature.contentType,
+    contentType: signature.contentType,
     buffer,
   } satisfies PreparedAttachment;
 }
@@ -391,6 +571,7 @@ async function sendWithResend(options: {
     },
     body: JSON.stringify(payload),
     cache: "no-store",
+    signal: AbortSignal.timeout(10_000),
   });
 
   if (!response.ok) {
@@ -512,7 +693,11 @@ async function notifySubmission(options: {
  * local form work convenient; in production it is treated as a configuration
  * error so the public endpoints cannot silently run without anti-bot checks.
  */
-async function verifyTurnstile(request: Request, token: string) {
+async function verifyTurnstile(
+  request: Request,
+  token: string,
+  expectedAction: "careers" | "suppliers" | "pqrs"
+) {
   const secret = process.env.TURNSTILE_SECRET_KEY?.trim();
   if (!secret) {
     if (process.env.NODE_ENV === "production") {
@@ -545,6 +730,7 @@ async function verifyTurnstile(request: Request, token: string) {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body,
         cache: "no-store",
+        signal: AbortSignal.timeout(10_000),
       }
     );
   } catch (error) {
@@ -557,8 +743,18 @@ async function verifyTurnstile(request: Request, token: string) {
 
   const result = (await response.json().catch(() => null)) as {
     success?: boolean;
+    action?: string;
+    hostname?: string;
   } | null;
-  if (!response.ok || !result?.success) {
+  const expectedHostname = new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || request.url
+  ).hostname;
+  if (
+    !response.ok ||
+    !result?.success ||
+    result.action !== expectedAction ||
+    result.hostname !== expectedHostname
+  ) {
     throw new FormRequestError(
       "La verificación de seguridad expiró o no es válida. Intenta de nuevo."
     );
@@ -567,9 +763,10 @@ async function verifyTurnstile(request: Request, token: string) {
 
 export async function handleCareersRequest(request: Request, site: FormSiteId) {
   try {
+    assertSafeFormRequest(request);
     const form = await request.formData();
     if (text(form.get("website"))) return jsonResponse({ ok: true });
-    await verifyTurnstile(request, text(form.get("turnstileToken")));
+    await verifyTurnstile(request, text(form.get("turnstileToken")), "careers");
 
     const name = required(text(form.get("name")), "nombre");
     const email = validEmail(
@@ -629,12 +826,7 @@ export async function handleCareersRequest(request: Request, site: FormSiteId) {
       clientRequestId: text(form.get("clientRequestId")),
       contactEmail: email,
       subject,
-      data: formFields(form, [
-        "resume",
-        "website",
-        "turnstileToken",
-        "clientRequestId",
-      ]),
+      data: formFields(form, CAREERS_STORED_FIELDS),
       attachments: [
         {
           filename: attachment.filename,
@@ -692,9 +884,14 @@ export async function handleSuppliersRequest(
   site: FormSiteId
 ) {
   try {
+    assertSafeFormRequest(request);
     const form = await request.formData();
     if (text(form.get("website"))) return jsonResponse({ ok: true });
-    await verifyTurnstile(request, text(form.get("turnstileToken")));
+    await verifyTurnstile(
+      request,
+      text(form.get("turnstileToken")),
+      "suppliers"
+    );
 
     const supplierType = validChoice(
       required(text(form.get("supplierType")), "tipo de proveedor", 40),
@@ -822,12 +1019,7 @@ export async function handleSuppliersRequest(
       clientRequestId: text(form.get("clientRequestId")),
       contactEmail: email,
       subject,
-      data: formFields(form, [
-        "portfolio",
-        "website",
-        "turnstileToken",
-        "clientRequestId",
-      ]),
+      data: formFields(form, SUPPLIERS_STORED_FIELDS),
       attachments: attachments.map(
         (attachment) =>
           ({
@@ -895,9 +1087,10 @@ function formValue(form: FormData, key: string) {
 
 export async function handlePqrsRequest(request: Request, site: FormSiteId) {
   try {
+    assertSafeFormRequest(request);
     const form = await request.formData();
     if (formValue(form, "website")) return jsonResponse({ ok: true });
-    await verifyTurnstile(request, formValue(form, "turnstileToken"));
+    await verifyTurnstile(request, formValue(form, "turnstileToken"), "pqrs");
 
     const errors = validatePqrsFields(Object.fromEntries(form));
     if (Object.keys(errors).length) {
@@ -1034,12 +1227,7 @@ export async function handlePqrsRequest(request: Request, site: FormSiteId) {
       clientRequestId: formValue(form, "clientRequestId"),
       contactEmail: email,
       subject,
-      data: formFields(form, [
-        "attachments",
-        "website",
-        "turnstileToken",
-        "clientRequestId",
-      ]),
+      data: formFields(form, PQRS_STORED_FIELDS),
       attachments: attachments.map(
         (attachment) =>
           ({

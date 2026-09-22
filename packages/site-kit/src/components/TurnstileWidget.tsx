@@ -11,6 +11,7 @@ type TurnstileApi = {
     options: {
       sitekey: string;
       callback?: (token: string) => void;
+      action?: string;
       "expired-callback"?: () => void;
       "error-callback"?: () => void;
     }
@@ -28,13 +29,17 @@ declare global {
 type TurnstileWidgetProps = {
   /** Increment this value after a submission to obtain a fresh token. */
   resetSignal?: number;
+  action: "careers" | "suppliers" | "pqrs";
 };
 
 /**
  * Explicit Cloudflare Turnstile widget shared by the three public forms.
  * The site key is public by design; the secret is checked server-side.
  */
-export function TurnstileWidget({ resetSignal = 0 }: TurnstileWidgetProps) {
+export function TurnstileWidget({
+  action,
+  resetSignal = 0,
+}: TurnstileWidgetProps) {
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
@@ -57,6 +62,7 @@ export function TurnstileWidget({ resetSignal = 0 }: TurnstileWidgetProps) {
 
       widgetIdRef.current = window.turnstile.render(containerRef.current, {
         sitekey: siteKey,
+        action,
         callback: (nextToken) => {
           setToken(nextToken);
           setWidgetError(false);
@@ -98,7 +104,7 @@ export function TurnstileWidget({ resetSignal = 0 }: TurnstileWidgetProps) {
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey]);
+  }, [action, siteKey]);
 
   useEffect(() => {
     if (!resetSignal || !widgetIdRef.current || !window.turnstile) return;

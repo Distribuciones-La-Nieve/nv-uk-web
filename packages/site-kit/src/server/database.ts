@@ -90,7 +90,7 @@ function getDatabasePool() {
         charset: "utf8mb4",
         waitForConnections: true,
         connectionLimit: Number(process.env.DATABASE_CONNECTION_LIMIT || 5),
-        queueLimit: 0,
+        queueLimit: Number(process.env.DATABASE_QUEUE_LIMIT || 50),
         ssl:
           process.env.DATABASE_SSL?.trim().toLowerCase() === "true"
             ? {}
