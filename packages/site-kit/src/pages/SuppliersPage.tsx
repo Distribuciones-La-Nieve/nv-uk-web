@@ -479,7 +479,10 @@ export function SuppliersPage({ site }: { site: SiteConfig }) {
               </label>
             </div>
 
-            <TurnstileWidget resetSignal={turnstileResetSignal} />
+            <TurnstileWidget
+              action="suppliers"
+              resetSignal={turnstileResetSignal}
+            />
 
             <input
               type="text"

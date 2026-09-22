@@ -1,8 +1,8 @@
 # Despliegue en Hostinger Node.js
 
-El repositorio conserva las dos aplicaciones y el paquete compartido. Next.js
-genera un servidor `standalone` distinto para cada marca, con únicamente las
-dependencias y archivos necesarios para ejecutarlo.
+El repositorio conserva las dos aplicaciones y el paquete compartido. En
+Hostinger se crean dos aplicaciones Node.js conectadas al mismo repositorio,
+pero cada una usa como raíz el workspace de su marca.
 
 ## Requisitos
 
@@ -19,15 +19,14 @@ Configurar en Hostinger:
 ```text
 Repositorio: este repositorio completo
 Rama: rama de producción
-Directorio raíz: / (raíz del repositorio)
-Comando de instalación: npm ci
-Comando de build: npm run deploy:la-nieve
-Comando de inicio: node deploy/la-nieve/apps/la-nieve/server.js
+Directorio raíz: apps/la-nieve
+Comando de build: npm run build
 Versión de Node.js: 20 o superior
 ```
 
-No se debe seleccionar `apps/la-nieve` como directorio raíz. El build necesita
-leer `package-lock.json`, los workspaces y `packages/site-kit` desde la raíz.
+Aunque el comando se ejecuta en `apps/la-nieve`, npm reconoce que la carpeta es
+un workspace y utiliza `package-lock.json`, `node_modules` y
+`packages/site-kit` desde la raíz del repositorio.
 
 ## Aplicación Unimarka
 
@@ -36,30 +35,17 @@ Configurar una segunda aplicación Node.js conectada al mismo repositorio:
 ```text
 Repositorio: este repositorio completo
 Rama: rama de producción
-Directorio raíz: / (raíz del repositorio)
-Comando de instalación: npm ci
-Comando de build: npm run deploy:unimarka
-Comando de inicio: node deploy/unimarka/apps/unimarka/server.js
+Directorio raíz: apps/unimarka
+Comando de build: npm run build
 Versión de Node.js: 20 o superior
 ```
 
 Cada aplicación recibe su propio dominio, variables y proceso. Un despliegue de
 La Nieve no necesita compilar Unimarka, y viceversa.
 
-Si el panel ofrece un único campo para instalación y build, usar:
-
-```bash
-npm ci && npm run deploy:la-nieve
-```
-
-o:
-
-```bash
-npm ci && npm run deploy:unimarka
-```
-
-No se configura un directorio de publicación estática. El sitio lo sirve el
-proceso Node.js indicado en el comando de inicio.
+Hostinger ejecuta la instalación automáticamente. No se configura un directorio
+de publicación estática: cada workspace es una aplicación Next.js con rutas de
+servidor.
 
 ## Variables públicas
 
@@ -98,6 +84,7 @@ DATABASE_USER=
 DATABASE_PASSWORD=
 DATABASE_SSL=false
 DATABASE_CONNECTION_LIMIT=5
+DATABASE_QUEUE_LIMIT=50
 ```
 
 Destinatarios para La Nieve:
@@ -119,9 +106,36 @@ RESEND_SUPPLIERS_TO_UNIMARKA=
 Las variables privadas no deben guardarse en Git. `.env.example` contiene solo
 los nombres esperados.
 
-## Funcionamiento del empaquetado
+## Controles de seguridad del alojamiento
 
-Los comandos de despliegue realizan estas tareas:
+Antes de habilitar los formularios públicos, configurar en Hostinger o en el
+proxy/WAF frontal:
+
+- Límite de cuerpo por solicitud de 27 MB.
+- Límites de frecuencia por IP y ruta para `/api/forms/*`.
+- Acceso HTTPS obligatorio y HSTS en el dominio público.
+- Acceso directo al origen restringido al proxy de confianza, si aplica.
+- MySQL limitado por firewall a los servidores de las aplicaciones.
+- Conexión MySQL con TLS (`DATABASE_SSL=true`) cuando el tráfico salga de una
+  red privada controlada.
+- Alertas de crecimiento de base de datos, errores 429/413 y fallos repetidos de
+  Turnstile.
+
+El repositorio debe permanecer privado. No se deben versionar exportaciones,
+instantáneas, credenciales, nombres de hosts internos ni resultados financieros
+o comerciales obtenidos de bases corporativas.
+
+## Empaquetado standalone opcional
+
+Los comandos siguientes permanecen disponibles para un VPS, una migración o un
+despliegue manual que necesite artefactos autónomos:
+
+```bash
+npm run deploy:la-nieve
+npm run deploy:unimarka
+```
+
+Estos comandos realizan las siguientes tareas:
 
 1. Compilan únicamente la aplicación seleccionada.
 2. Crean la salida mínima de Next.js con `output: "standalone"`.
@@ -143,8 +157,8 @@ deploy/unimarka/
   package.json
 ```
 
-`deploy/` está ignorado por Git porque siempre se regenera durante el build de
-Hostinger.
+`deploy/` está ignorado por Git porque es una salida generada y no forma parte
+del despliegue administrado de Hostinger.
 
 ## Verificación local
 

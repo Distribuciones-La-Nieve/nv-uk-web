@@ -417,7 +417,10 @@ export function CareerApplicationPage({
                 : "Adjunta tu hoja de vida para que podamos revisar tu perfil.")}
           </p>
 
-          <TurnstileWidget resetSignal={turnstileResetSignal} />
+          <TurnstileWidget
+            action="careers"
+            resetSignal={turnstileResetSignal}
+          />
 
           <button
             type="submit"

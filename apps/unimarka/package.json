@@ -5,12 +5,12 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
-    "start": "next start --port 3001",
+    "start": "next start",
     "typecheck": "tsc --noEmit --incremental false"
   },
   "dependencies": {
     "@corporativo/site-kit": "*",
-    "next": "16.2.10",
+    "next": "^16.3.6",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },

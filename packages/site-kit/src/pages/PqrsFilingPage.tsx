@@ -1218,7 +1218,7 @@ export function PqrsFilingPage({ site }: { site: SiteConfig }) {
               </div>
             </dl>
 
-            <TurnstileWidget resetSignal={turnstileResetSignal} />
+            <TurnstileWidget action="pqrs" resetSignal={turnstileResetSignal} />
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <button

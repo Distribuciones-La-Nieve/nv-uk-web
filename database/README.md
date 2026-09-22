@@ -20,6 +20,7 @@ DATABASE_USER=usuario_de_la_base
 DATABASE_PASSWORD=contrasena_de_la_base
 DATABASE_SSL=false
 DATABASE_CONNECTION_LIMIT=5
+DATABASE_QUEUE_LIMIT=50
 ```
 
 Tambien se admite una sola `DATABASE_URL` con formato `mysql://usuario:contrasena@host:3306/base`.
