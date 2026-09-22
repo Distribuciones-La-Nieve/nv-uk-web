@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { loadEnvConfig } from "@next/env";
 import type { SiteConfig } from "../config/types";
+import { getCareerJob } from "../config/careersContent";
 import {
   PQRS_REQUEST_TYPES as PQRS_TYPES,
   PQRS_ATTACHMENT_RULES,
@@ -15,27 +15,6 @@ import {
   type PersistedFormSubmission,
   type StoredFormAttachment,
 } from "./database";
-
-// Next normally loads environment files from the individual app directory.
-// This monorepo keeps the shared secret in the repository root, so resolve
-// both layouts before the first request is handled. The value is never logged
-// or exposed to the browser.
-const environmentRoots = [
-  process.cwd(),
-  path.resolve(process.cwd(), ".."),
-  path.resolve(process.cwd(), "../.."),
-];
-for (const root of environmentRoots) {
-  const hasEnvironmentFile = [
-    ".env",
-    ".env.local",
-    ".env.development",
-    ".env.development.local",
-  ].some((fileName) => existsSync(path.join(root, fileName)));
-  if (hasEnvironmentFile) {
-    loadEnvConfig(root);
-  }
-}
 
 export type FormSiteId = SiteConfig["id"];
 
@@ -236,37 +215,8 @@ function getEmailBrand(site: FormSiteId) {
 
 function getLogoPath(site: FormSiteId) {
   const { logoFile } = getEmailBrand(site);
-  const appDirectory = site === "la-nieve" ? "la-nieve" : "unimarka";
-  const candidates = [
-    path.resolve(process.cwd(), "public", "brand", logoFile),
-    path.resolve(
-      process.cwd(),
-      "apps",
-      appDirectory,
-      "public",
-      "brand",
-      logoFile
-    ),
-    path.resolve(
-      process.cwd(),
-      "..",
-      appDirectory,
-      "public",
-      "brand",
-      logoFile
-    ),
-    path.resolve(
-      process.cwd(),
-      "..",
-      "..",
-      "apps",
-      appDirectory,
-      "public",
-      "brand",
-      logoFile
-    ),
-  ];
-  return candidates.find((candidate) => existsSync(candidate));
+  const logoPath = path.join(process.cwd(), "public", "brand", logoFile);
+  return existsSync(logoPath) ? logoPath : undefined;
 }
 
 function getLogoAttachment(site: FormSiteId): ResendAttachment | undefined {
@@ -630,7 +580,18 @@ export async function handleCareersRequest(request: Request, site: FormSiteId) {
       "teléfono"
     );
     const city = required(text(form.get("city")), "ciudad");
-    const area = required(text(form.get("area")), "área de interés", 100);
+    const vacancyId = text(form.get("vacancyId"));
+    const vacancy = vacancyId ? getCareerJob(vacancyId) : undefined;
+    if (vacancyId && !vacancy) {
+      throw new FormRequestError("La vacante seleccionada no es válida.");
+    }
+    const area = vacancy
+      ? vacancy.department
+      : required(text(form.get("area")), "área de interés", 100);
+    if (vacancy) {
+      form.set("vacancyTitle", vacancy.title);
+      form.set("area", vacancy.area);
+    }
     const profile = required(text(form.get("profile")), "perfil");
     const accepted = text(form.get("data-policy-acceptance"));
     if (accepted !== "on" && accepted !== "true") {
@@ -648,7 +609,20 @@ export async function handleCareersRequest(request: Request, site: FormSiteId) {
       ALLOWED_RESUME_EXTENSIONS
     );
 
-    const subject = `${name} — ${area}`;
+    const subject = `${name} — ${vacancy?.title ?? area}`;
+    const vacancySections: EmailSection[] = vacancy
+      ? [
+          {
+            title: "Vacante seleccionada",
+            fields: [
+              ["Código de vacante", vacancy.id],
+              ["Cargo", vacancy.title],
+              ["Área", vacancy.department],
+              ["Ubicación", `${vacancy.city} · ${vacancy.workMode}`],
+            ],
+          },
+        ]
+      : [];
     const submission = await persistFormSubmission({
       site,
       kind: "careers",
@@ -685,6 +659,7 @@ export async function handleCareersRequest(request: Request, site: FormSiteId) {
         summaryLabel: "Número de radicado",
         summary: submission.trackingNumber,
         sections: [
+          ...vacancySections,
           {
             title: "Datos de la persona postulante",
             fields: [

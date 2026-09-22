@@ -36,6 +36,6 @@ El formato es `NV-PQRS-AAAA-######`, `NV-VAC-AAAA-######` y `NV-PRO-AAAA-######`
 
 ## 4. Despliegue
 
-La aplicacion necesita ejecutarse como servidor Node con `next start`; un hosting que solo sirva archivos estaticos no puede ejecutar estos endpoints ni conectarse a MySQL. Despues de definir las variables, instala dependencias, ejecuta el build y reinicia el proceso Node.
+La aplicacion necesita ejecutarse como servidor Node; un hosting que solo sirva archivos estaticos no puede ejecutar estos endpoints ni conectarse a MySQL. El despliegue de Hostinger usa los servidores `standalone` documentados en `docs/hostinger-node-deployment.md`.
 
 Antes de recibir datos reales, valida con la empresa y asesoria juridica la politica de conservacion, acceso, tiempos de respuesta y el caracter oficial del radicado.

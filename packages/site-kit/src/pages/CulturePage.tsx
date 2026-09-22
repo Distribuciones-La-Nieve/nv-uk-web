@@ -64,8 +64,8 @@ export function CulturePage({ site }: { site: SiteConfig }) {
               Un buen consejo hace crecer tu negocio
             </h2>
             <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-              Gira una tarjeta y deja que {character} te acompañe con una idea
-              para poner en práctica.
+              Pasa el cursor sobre una tarjeta y deja que {character} te
+              acompañe con una idea para poner en práctica.
             </p>
           </div>
           <CultureTopics site={site.id} />

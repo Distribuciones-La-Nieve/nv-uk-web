@@ -10,6 +10,8 @@ loadEnvConfig(
 );
 
 const nextConfig: NextConfig = {
+  output: "standalone",
+  outputFileTracingRoot: path.resolve(__dirname, "../.."),
   transpilePackages: ["@corporativo/site-kit"],
   env: {
     NEXT_PUBLIC_TURNSTILE_SITE_KEY:

@@ -38,7 +38,7 @@ export function Stats({ site }: { site: SiteConfig }) {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="rounded-[2.5rem] bg-brand-primary bg-gradient-to-br from-brand-primary to-[color-mix(in_srgb,var(--brand-primary)_78%,black)] px-6 py-8 text-white shadow-card sm:px-10 sm:py-10 lg:px-14">
-          <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
+          <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-12">
             <div ref={contentRef} className="min-w-0 max-w-lg">
               <h2
                 id="home-stats-title"
@@ -104,17 +104,17 @@ export function Stats({ site }: { site: SiteConfig }) {
               </dl>
             </div>
             <div ref={figureRef} className="relative min-w-0">
-              <div className="relative z-10 mx-auto mb-[-1rem] flex w-full max-w-[12rem] justify-center lg:absolute lg:left-0 lg:top-20 lg:mb-0 lg:w-44 lg:max-w-none lg:justify-start">
+              <div className="relative z-10 mx-auto mb-[-1.5rem] flex w-full max-w-56 justify-center lg:absolute lg:left-0 lg:top-14 lg:mb-0 lg:w-60 lg:max-w-none lg:justify-start">
                 <Image
                   src={mapCharacter.src}
                   alt={mapCharacter.alt}
                   width={mapCharacter.width}
                   height={mapCharacter.height}
-                  sizes="(min-width: 1024px) 176px, 192px"
-                  className="h-auto w-48 object-contain lg:w-44"
+                  sizes="(min-width: 1024px) 240px, 224px"
+                  className="h-auto w-56 object-contain lg:w-60"
                 />
               </div>
-              <div className="lg:pl-28">
+              <div className="lg:pl-40">
                 <WarehouseMap site={site.id} />
               </div>
             </div>
