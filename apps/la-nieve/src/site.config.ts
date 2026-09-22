@@ -14,6 +14,7 @@ import {
   type SiteBrandLogo,
   type SiteConfig,
 } from "@corporativo/site-kit/config";
+import clienteNieveHero from "../../../assets/Cliente Nieve2.png";
 
 function brandLogo(
   name: string,
@@ -480,7 +481,7 @@ export const siteConfig = {
     description:
       "En Distribuciones La Nieve entendemos el día a día de tiendas, supermercados y aliados comerciales. Por eso trabajamos para que nunca falte el producto correcto, en el momento correcto.",
     image: {
-      src: "/images/cliente-nieve-hero.png",
+      src: clienteNieveHero,
       alt: "Cliente recibiendo una caja de Distribuciones La Nieve en su tienda",
       width: 1254,
       height: 1254,

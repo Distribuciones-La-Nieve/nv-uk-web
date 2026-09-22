@@ -39,6 +39,16 @@ npm run typecheck         # TypeScript en los tres workspaces
 npm run format:check      # comprueba formato
 ```
 
+## Despliegue en Hostinger
+
+Cada marca se despliega como una aplicación Node.js independiente desde la
+raíz del repositorio. Los comandos `npm run deploy:la-nieve` y
+`npm run deploy:unimarka` generan paquetes autónomos en `deploy/`, sin duplicar
+el código fuente compartido.
+
+La configuración completa del panel, las variables y el procedimiento de
+verificación están en [docs/hostinger-node-deployment.md](./docs/hostinger-node-deployment.md).
+
 ## Arquitectura
 
 ```text

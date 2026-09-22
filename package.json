@@ -16,6 +16,8 @@
     "build": "npm run build --workspaces --if-present",
     "build:la-nieve": "npm run build --workspace=@corporativo/la-nieve",
     "build:unimarka": "npm run build --workspace=@corporativo/unimarka",
+    "deploy:la-nieve": "npm run build:la-nieve && node scripts/package-standalone.mjs la-nieve",
+    "deploy:unimarka": "npm run build:unimarka && node scripts/package-standalone.mjs unimarka",
     "start:la-nieve": "npm run start --workspace=@corporativo/la-nieve",
     "start:unimarka": "npm run start --workspace=@corporativo/unimarka",
     "lint": "eslint apps packages scripts/dev.mjs",

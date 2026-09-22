@@ -17,15 +17,6 @@ function getAllyInitials(ally: SiteCommercialAlly) {
     .toUpperCase();
 }
 
-function getCommercialHouseId(name: string) {
-  return `commercial-house-${name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")}`;
-}
-
 function groupAlliesByCommercialHouse(items: readonly SiteCommercialAlly[]) {
   const groups = new Map<string, SiteCommercialAlly[]>();
 
@@ -55,6 +46,9 @@ export function AlliesPage({ site }: { site: SiteConfig }) {
   const logoStageClassName =
     "flex h-28 w-full items-center justify-center overflow-hidden dark:rounded-2xl dark:bg-white/90 dark:px-4 dark:py-3";
   const allyGroups = groupAlliesByCommercialHouse(site.allies.items);
+  const alliesInCommercialHouseOrder = allyGroups.flatMap(
+    (house) => house.items
+  );
   const renderAllyCard = (ally: SiteCommercialAlly) => (
     <article
       key={ally.name}
@@ -121,31 +115,11 @@ export function AlliesPage({ site }: { site: SiteConfig }) {
             Hoy hacen parte de nuestra historia y las representamos con orgullo
             en cada rincón a los que llegamos.
           </p>
-          <p className="mt-4 text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground"></p>
         </RevealGroup>
-        <div className="space-y-14" data-commercial-houses="true">
-          {allyGroups.map((house) => {
-            const headingId = getCommercialHouseId(house.name);
-
-            return (
-              <section
-                key={house.name}
-                aria-labelledby={headingId}
-                className="border-t border-border pt-8 first:border-t-0 first:pt-0"
-                data-commercial-house={house.name}
-              >
-                <h2
-                  id={headingId}
-                  className="mb-5 text-2xl font-black tracking-tight text-foreground sm:text-3xl"
-                >
-                  {house.name}
-                </h2>
-                <AlliesLogoGrid className={logoGridClassName}>
-                  {house.items.map(renderAllyCard)}
-                </AlliesLogoGrid>
-              </section>
-            );
-          })}
+        <div data-commercial-houses="true">
+          <AlliesLogoGrid className={logoGridClassName}>
+            {alliesInCommercialHouseOrder.map(renderAllyCard)}
+          </AlliesLogoGrid>
         </div>
       </section>
     </>

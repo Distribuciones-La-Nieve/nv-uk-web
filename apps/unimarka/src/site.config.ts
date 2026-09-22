@@ -219,12 +219,12 @@ export const siteConfig = {
     description:
       "En Unimarka ofrecemos soluciones de comercialización y distribución para productos de consumo masivo, institucionales y licores",
     image: {
-      src: "/images/cliente-unimarka.jpg",
-      alt: "Cliente de Unimarka en su negocio",
-      width: 2679,
-      height: 1459,
+      src: "/images/cliente-unimarka-hero.png",
+      alt: "Cliente recibiendo una caja de Unimarka en su negocio",
+      width: 1699,
+      height: 926,
       treatment: "photo",
-      objectPosition: "50% 50%",
+      objectPosition: "56% 50%",
     },
     points: [
       {
@@ -364,14 +364,28 @@ export const siteConfig = {
     title: "Aliados que hacen parte de esta historia",
     description: "Conoce las marcas aliadas de Unimarka.",
     items: [
-      // Relevancia editorial en Colombia: eleccion FMCG publicada por Kantar,
-      // reconocimiento masivo y, despues, marcas especializadas/institucionales.
+      // Orden editorial por casa comercial; la cuadrícula los muestra seguidos,
+      // sin encabezados ni bloques visuales separados.
       commercialAllyLogo(
         "Brinsa",
         "Refisal",
         "/brands/allies-page/refisal.webp",
         600,
         376
+      ),
+      commercialAllyLogo(
+        "Brinsa",
+        "Blancox",
+        "/brands/allies-page/blancox.webp",
+        600,
+        393
+      ),
+      commercialAllyLogo(
+        "Brinsa",
+        "Blancox Lozacrem",
+        "/brands/allies-page/blancox-lozacrem.webp",
+        600,
+        227
       ),
       commercialAllyLogo(
         "Unilever",
@@ -381,31 +395,10 @@ export const siteConfig = {
         400
       ),
       commercialAllyLogo(
-        "Essity / Grupo Familia",
-        "Familia",
-        "/brands/allies-page/familia.webp",
-        600,
-        372
-      ),
-      commercialAllyLogo(
         "Unilever",
         "Dove",
         "/brands/allies-page/dove.webp",
         550,
-        400
-      ),
-      commercialAllyLogo(
-        "Quala",
-        "Vive 100",
-        "/brands/allies-page/vive100.webp",
-        600,
-        210
-      ),
-      commercialAllyLogo(
-        "Essity / Grupo Familia",
-        "Nosotras",
-        "/brands/allies-page/nosotras.webp",
-        452,
         400
       ),
       commercialAllyLogo(
@@ -414,27 +407,6 @@ export const siteConfig = {
         "/brands/allies-page/maizena.webp",
         600,
         232
-      ),
-      commercialAllyLogo(
-        "Essity / Grupo Familia",
-        "Pequeñín",
-        "/brands/allies-page/pequenin.webp",
-        549,
-        400
-      ),
-      commercialAllyLogo(
-        "Essity / Grupo Familia",
-        "TENA",
-        "/brands/allies-page/tena.webp",
-        600,
-        368
-      ),
-      commercialAllyLogo(
-        "Super de Alimentos",
-        "Trululu",
-        "/brands/allies-page/trululu.webp",
-        600,
-        222
       ),
       commercialAllyLogo(
         "Unilever",
@@ -451,11 +423,102 @@ export const siteConfig = {
         282
       ),
       commercialAllyLogo(
-        "Brinsa",
-        "Blancox",
-        "/brands/allies-page/blancox.webp",
+        "Unilever",
+        "Lux",
+        "/brands/allies-page/lux.webp",
         600,
-        393
+        251
+      ),
+      commercialAllyLogo(
+        "Essity / Grupo Familia",
+        "Familia",
+        "/brands/allies-page/familia.webp",
+        600,
+        372
+      ),
+      commercialAllyLogo(
+        "Essity / Grupo Familia",
+        "Nosotras",
+        "/brands/allies-page/nosotras.webp",
+        452,
+        400
+      ),
+      commercialAllyLogo(
+        "Essity / Grupo Familia",
+        "Pequeñín",
+        "/brands/allies-page/pequenin.webp",
+        549,
+        400
+      ),
+      commercialAllyLogo(
+        "Essity / Grupo Familia",
+        "TENA",
+        "/brands/allies-page/tena.webp",
+        600,
+        368
+      ),
+      commercialAllyLogo(
+        "Essity / Grupo Familia",
+        "Tork",
+        "/brands/allies-page/tork.webp",
+        600,
+        340
+      ),
+      commercialAllyLogo(
+        "Essity / Grupo Familia",
+        "Pomys",
+        "/brands/allies-page/pomys.webp",
+        600,
+        326
+      ),
+      commercialAllyLogo(
+        "Essity / Grupo Familia",
+        "Familia Institucional",
+        "/brands/allies-page/familia-institucional.webp",
+        600,
+        371
+      ),
+      commercialAllyLogo(
+        "Quala",
+        "Vive 100",
+        "/brands/allies-page/vive100.webp",
+        600,
+        210
+      ),
+      commercialAllyLogo(
+        "Quala",
+        "Ricostilla",
+        "/brands/allies-page/ricostilla.webp",
+        554,
+        400
+      ),
+      commercialAllyLogo(
+        "Quala",
+        "Saviloe",
+        "/brands/allies-page/saviloe.webp",
+        600,
+        217
+      ),
+      commercialAllyLogo(
+        "Quala",
+        "NutriBela",
+        "/brands/allies-page/nutribela.webp",
+        600,
+        193
+      ),
+      commercialAllyLogo(
+        "Super de Alimentos",
+        "Trululu",
+        "/brands/allies-page/trululu.webp",
+        600,
+        222
+      ),
+      commercialAllyLogo(
+        "Super de Alimentos",
+        "Súper",
+        "/brands/allies-page/super.webp",
+        600,
+        333
       ),
       commercialAllyLogo(
         "Reckitt",
@@ -465,11 +528,11 @@ export const siteConfig = {
         400
       ),
       commercialAllyLogo(
-        "Unilever",
-        "Lux",
-        "/brands/allies-page/lux.webp",
-        600,
-        251
+        "Reckitt",
+        "Sanpic",
+        "/brands/allies-page/sanpic.webp",
+        526,
+        400
       ),
       commercialAllyLogo(
         "Alicorp",
@@ -493,11 +556,11 @@ export const siteConfig = {
         178
       ),
       commercialAllyLogo(
-        "Super de Alimentos",
-        "Súper",
-        "/brands/allies-page/super.webp",
+        "Grupo BIOS",
+        "Nutriss",
+        "/brands/allies-page/nutriss.webp",
         600,
-        333
+        318
       ),
       commercialAllyLogo(
         "Americandy / Dulces La Americana",
@@ -507,11 +570,11 @@ export const siteConfig = {
         400
       ),
       commercialAllyLogo(
-        "Essity / Grupo Familia",
-        "Tork",
-        "/brands/allies-page/tork.webp",
+        "Americandy / Dulces La Americana",
+        "Americandy",
+        "/brands/allies-page/americandy.webp",
         600,
-        340
+        255
       ),
       commercialAllyLogo(
         "CanAmor",
@@ -521,13 +584,6 @@ export const siteConfig = {
         378
       ),
       commercialAllyLogo(
-        "Essity / Grupo Familia",
-        "Pomys",
-        "/brands/allies-page/pomys.webp",
-        600,
-        326
-      ),
-      commercialAllyLogo(
         "Essential Home",
         "Woolite",
         "/brands/allies-page/woolite.webp",
@@ -535,67 +591,11 @@ export const siteConfig = {
         284
       ),
       commercialAllyLogo(
-        "Grupo BIOS",
-        "Nutriss",
-        "/brands/allies-page/nutriss.webp",
-        600,
-        318
-      ),
-      commercialAllyLogo(
-        "Quala",
-        "Ricostilla",
-        "/brands/allies-page/ricostilla.webp",
-        554,
-        400
-      ),
-      commercialAllyLogo(
         "Soberana",
         "La Soberana",
         "/brands/allies-page/la-soberana.webp",
         600,
         249
-      ),
-      commercialAllyLogo(
-        "Quala",
-        "Saviloe",
-        "/brands/allies-page/saviloe.webp",
-        600,
-        217
-      ),
-      commercialAllyLogo(
-        "Quala",
-        "NutriBela",
-        "/brands/allies-page/nutribela.webp",
-        600,
-        193
-      ),
-      commercialAllyLogo(
-        "Brinsa",
-        "Blancox Lozacrem",
-        "/brands/allies-page/blancox-lozacrem.webp",
-        600,
-        227
-      ),
-      commercialAllyLogo(
-        "Reckitt",
-        "Sanpic",
-        "/brands/allies-page/sanpic.webp",
-        526,
-        400
-      ),
-      commercialAllyLogo(
-        "Essity / Grupo Familia",
-        "Familia Institucional",
-        "/brands/allies-page/familia-institucional.webp",
-        600,
-        371
-      ),
-      commercialAllyLogo(
-        "Americandy / Dulces La Americana",
-        "Americandy",
-        "/brands/allies-page/americandy.webp",
-        600,
-        255
       ),
     ],
     logos: unimarkaBrandLogos,

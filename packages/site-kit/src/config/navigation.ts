@@ -15,11 +15,6 @@ export function createCorporateNavigation(
       page: "allies",
     },
     { label: `Cultura ${brandLabel}`, href: "/cultura", page: "culture" },
-    {
-      label: "Contacto",
-      href: "/contacto",
-      page: "contact",
-    },
     { label: "Proveedores", href: "/proveedores", page: "suppliers" },
     {
       label: "Trabaja con nosotros",
@@ -31,11 +26,6 @@ export function createCorporateNavigation(
       href: "/legal",
       page: "legal",
       children: [
-        {
-          label: "Código de ética",
-          href: "/legal/codigo-de-etica",
-          page: "ethics",
-        },
         {
           label: "Tratamiento de datos",
           href: "/legal/tratamiento-de-datos",

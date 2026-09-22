@@ -1,43 +1,33 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { loadEnvConfig } from "@next/env";
 import type { SiteConfig } from "../config/types";
+import { getCareerJob } from "../config/careersContent";
 import {
   PQRS_REQUEST_TYPES as PQRS_TYPES,
   PQRS_ATTACHMENT_RULES,
 } from "../config/pqrsFilingContent";
 import { validatePqrsFields } from "../lib/formValidation";
-
-// Next normally loads environment files from the individual app directory.
-// This monorepo keeps the shared secret in the repository root, so resolve
-// both layouts before the first request is handled. The value is never logged
-// or exposed to the browser.
-const environmentRoots = [
-  process.cwd(),
-  path.resolve(process.cwd(), ".."),
-  path.resolve(process.cwd(), "../.."),
-];
-for (const root of environmentRoots) {
-  const hasEnvironmentFile = [
-    ".env",
-    ".env.local",
-    ".env.development",
-    ".env.development.local",
-  ].some((fileName) => existsSync(path.join(root, fileName)));
-  if (hasEnvironmentFile) {
-    loadEnvConfig(root);
-  }
-}
+import {
+  FormDatabaseError,
+  markNotificationStatus,
+  persistFormSubmission,
+  type FormKind,
+  type PersistedFormSubmission,
+  type StoredFormAttachment,
+} from "./database";
 
 export type FormSiteId = SiteConfig["id"];
-
-type FormKind = "contact" | "careers" | "pqrs" | "suppliers";
 
 type ResendAttachment = {
   filename: string;
   content: string;
   content_id?: string;
   content_type?: string;
+};
+
+type PreparedAttachment = ResendAttachment & {
+  buffer: Buffer;
+  contentType: string;
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -71,7 +61,7 @@ const PQRS_DOCUMENT_TYPES = new Set([
   "Permiso especial de permanencia",
   "Otro",
 ]);
-const SUPPLIER_TYPES = new Set(["merchandise"]);
+const SUPPLIER_TYPES = new Set(["merchandise", "services"]);
 const SUPPLIER_PRODUCT_CATEGORIES = new Set([
   "Alimentos y bebidas",
   "Aseo del hogar",
@@ -91,18 +81,11 @@ const SUPPLIER_DISTRIBUTION_SEGMENTS = new Set([
 const YES_NO_OPTIONS = new Set(["Sí", "No"]);
 const PERSON_NAME_PATTERN = /^[\p{L}][\p{L}\s.'-]*$/u;
 const DIGITS_PATTERN = /^\d+$/;
-const CONTACT_TYPES = new Set(["general", "client"]);
-const GENERAL_CONTACT_SUBJECTS: Readonly<Record<string, string>> = {
-  commercial: "Consulta comercial",
-  general: "Información general",
-  other: "Otro motivo",
-};
-const CLIENT_CONTACT_SUBJECTS: Readonly<Record<string, string>> = {
-  orders: "Pedidos y entregas",
-  billing: "Facturación",
-  payments: "Cartera y pagos",
-  "customer-service": "Servicio al cliente",
-  "client-other": "Otro motivo como cliente",
+
+const FORM_KIND_LABELS: Record<FormKind, string> = {
+  careers: "postulación laboral",
+  pqrs: "solicitud PQRS",
+  suppliers: "registro de proveedor",
 };
 
 class FormRequestError extends Error {
@@ -124,6 +107,19 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
 
 function text(value: FormDataEntryValue | string | null | undefined) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function formFields(
+  form: FormData,
+  excludedKeys: readonly string[] = []
+): Record<string, string> {
+  const excluded = new Set(excludedKeys);
+  const fields: Record<string, string> = {};
+  for (const [key, value] of form.entries()) {
+    if (excluded.has(key) || typeof value !== "string") continue;
+    fields[key] = value.trim();
+  }
+  return fields;
 }
 
 function required(value: string, label: string, max = MAX_TEXT_LENGTH) {
@@ -171,6 +167,20 @@ function validPersonName(value: string, label: string) {
   return normalized;
 }
 
+function validWebUrl(value: string, label: string) {
+  if (!value) return "";
+
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      throw new Error();
+    }
+    return value;
+  } catch {
+    throw new FormRequestError(`El campo ${label} no contiene una URL válida.`);
+  }
+}
+
 function escapeHtml(value: string) {
   return value.replace(
     /[&<>'"]/g,
@@ -205,37 +215,8 @@ function getEmailBrand(site: FormSiteId) {
 
 function getLogoPath(site: FormSiteId) {
   const { logoFile } = getEmailBrand(site);
-  const appDirectory = site === "la-nieve" ? "la-nieve" : "unimarka";
-  const candidates = [
-    path.resolve(process.cwd(), "public", "brand", logoFile),
-    path.resolve(
-      process.cwd(),
-      "apps",
-      appDirectory,
-      "public",
-      "brand",
-      logoFile
-    ),
-    path.resolve(
-      process.cwd(),
-      "..",
-      appDirectory,
-      "public",
-      "brand",
-      logoFile
-    ),
-    path.resolve(
-      process.cwd(),
-      "..",
-      "..",
-      "apps",
-      appDirectory,
-      "public",
-      "brand",
-      logoFile
-    ),
-  ];
-  return candidates.find((candidate) => existsSync(candidate));
+  const logoPath = path.join(process.cwd(), "public", "brand", logoFile);
+  return existsSync(logoPath) ? logoPath : undefined;
 }
 
 function getLogoAttachment(site: FormSiteId): ResendAttachment | undefined {
@@ -290,11 +271,35 @@ function renderEmail(options: {
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#172033"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#f1f5f9"><tr><td align="center" style="padding:24px 12px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:720px;border-collapse:separate;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;background:#ffffff"><tr><td style="padding:26px 32px;background:${brand.color};color:#ffffff">${logo}<p style="margin:0;font-size:14px;line-height:20px;font-weight:700;letter-spacing:.04em">${escapeHtml(brand.name)}</p><p style="margin:5px 0 0;font-size:12px;line-height:18px;opacity:.88">Comunicación recibida desde el sitio web</p></td></tr><tr><td style="padding:30px 32px 18px"><p style="margin:0;color:${brand.color};font-size:12px;line-height:18px;font-weight:700;letter-spacing:.12em;text-transform:uppercase">${escapeHtml(options.eyebrow)}</p><h1 style="margin:8px 0 0;color:#172033;font-size:25px;line-height:33px;font-weight:700">${escapeHtml(options.title)}</h1><p style="margin:12px 0 0;color:#475569;font-size:15px;line-height:23px">${escapeHtml(options.intro)}</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;border-collapse:separate;border-left:4px solid ${brand.color};background:#f8fafc"><tr><td style="padding:13px 16px"><p style="margin:0;color:#64748b;font-size:11px;line-height:16px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">${escapeHtml(options.summaryLabel)}</p><p style="margin:4px 0 0;color:#172033;font-size:16px;line-height:22px;font-weight:700">${escapeHtml(options.summary)}</p></td></tr></table></td></tr>${options.sections.map(renderEmailSection).join("")}<tr><td style="padding:4px 32px 28px"><p style="margin:0;padding-top:18px;border-top:1px solid #e5e7eb;color:#64748b;font-size:12px;line-height:19px">${escapeHtml(options.footerNote)}</p></td></tr></table></td></tr></table></body></html>`;
 }
 
+function renderConfirmationEmail(options: {
+  site: FormSiteId;
+  kind: FormKind;
+  trackingNumber: string;
+  subject: string;
+}) {
+  return renderEmail({
+    site: options.site,
+    eyebrow: "Confirmacion de recepcion",
+    title: "Tu solicitud fue recibida",
+    intro: `Conserva este numero para referenciar tu ${FORM_KIND_LABELS[options.kind]}.`,
+    summaryLabel: "Numero de radicado",
+    summary: options.trackingNumber,
+    sections: [
+      {
+        title: "Datos de recepcion",
+        fields: [
+          ["Tipo de tramite", FORM_KIND_LABELS[options.kind]],
+          ["Asunto o referencia", options.subject],
+          ["Numero de radicado", options.trackingNumber],
+        ],
+      },
+    ],
+    footerNote:
+      "Este mensaje confirma la recepcion de la solicitud. La respuesta y los tiempos aplicables seran gestionados por el equipo responsable.",
+  });
+}
+
 function getRecipient(kind: FormKind, site: FormSiteId) {
-  // Dedicated destination for the La Nieve contact form.
-  if (site === "la-nieve" && kind === "contact") {
-    return "datalab6@lanieve.co";
-  }
   const siteKey = site === "la-nieve" ? "LA_NIEVE" : "UNIMARKA";
   const kindKey = kind.toUpperCase();
   return (
@@ -328,14 +333,22 @@ async function fileToAttachment(file: File, allowedExtensions: Set<string>) {
       `El formato del archivo ${file.name} no está permitido.`
     );
   }
-  const content = Buffer.from(await file.arrayBuffer()).toString("base64");
-  return { filename: file.name, content } satisfies ResendAttachment;
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const contentType = file.type || "application/octet-stream";
+  return {
+    filename: file.name,
+    content: buffer.toString("base64"),
+    content_type: contentType,
+    contentType,
+    buffer,
+  } satisfies PreparedAttachment;
 }
 
 async function sendWithResend(options: {
   site: FormSiteId;
   kind: FormKind;
   subject: string;
+  to?: string;
   replyTo?: string;
   html: string;
   attachments?: readonly ResendAttachment[];
@@ -351,7 +364,7 @@ async function sendWithResend(options: {
 
   const payload: Record<string, unknown> = {
     from: getSender(options.site),
-    to: [getRecipient(options.kind, options.site)],
+    to: [options.to || getRecipient(options.kind, options.site)],
     subject: options.subject,
     html: options.html,
   };
@@ -359,7 +372,14 @@ async function sendWithResend(options: {
   const logoAttachment = getLogoAttachment(options.site);
   const attachments = [
     ...(logoAttachment ? [logoAttachment] : []),
-    ...(options.attachments ?? []),
+    ...(options.attachments ?? []).map((attachment) => ({
+      filename: attachment.filename,
+      content: attachment.content,
+      ...(attachment.content_id ? { content_id: attachment.content_id } : {}),
+      ...(attachment.content_type
+        ? { content_type: attachment.content_type }
+        : {}),
+    })),
   ];
   if (attachments.length) payload.attachments = attachments;
 
@@ -387,15 +407,104 @@ async function sendWithResend(options: {
   }
 }
 
-function getJsonPayload(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new FormRequestError("El cuerpo de la solicitud no es válido.");
-  }
-  return value as Record<string, unknown>;
+function notificationError(error: unknown) {
+  return error instanceof Error
+    ? error.message
+    : "No fue posible enviar la notificacion.";
 }
 
-function jsonText(payload: Record<string, unknown>, key: string) {
-  return typeof payload[key] === "string" ? String(payload[key]).trim() : "";
+async function safelyMarkNotification(
+  submissionId: number,
+  channel: "internal" | "confirmation",
+  status: "sent" | "failed",
+  errorMessage?: string
+) {
+  try {
+    await markNotificationStatus(submissionId, channel, status, errorMessage);
+  } catch (error) {
+    console.error("No fue posible actualizar el estado de la notificacion", {
+      submissionId,
+      channel,
+      error: notificationError(error),
+    });
+  }
+}
+
+async function notifySubmission(options: {
+  submission: PersistedFormSubmission;
+  site: FormSiteId;
+  kind: FormKind;
+  email: string;
+  subject: string;
+  internalSubject: string;
+  internalHtml: string;
+  attachments?: readonly ResendAttachment[];
+}) {
+  let internalNotificationSent =
+    options.submission.notificationStatus === "sent";
+  let confirmationSent = options.submission.confirmationStatus === "sent";
+
+  if (!internalNotificationSent) {
+    try {
+      await sendWithResend({
+        site: options.site,
+        kind: options.kind,
+        subject: `[${options.submission.trackingNumber}] ${options.internalSubject}`,
+        replyTo: options.email,
+        attachments: options.attachments,
+        html: options.internalHtml,
+      });
+      internalNotificationSent = true;
+      await safelyMarkNotification(options.submission.id, "internal", "sent");
+    } catch (error) {
+      await safelyMarkNotification(
+        options.submission.id,
+        "internal",
+        "failed",
+        notificationError(error)
+      );
+      console.error("No fue posible enviar la notificacion interna", {
+        trackingNumber: options.submission.trackingNumber,
+        error: notificationError(error),
+      });
+    }
+  }
+
+  if (!confirmationSent) {
+    try {
+      await sendWithResend({
+        site: options.site,
+        kind: options.kind,
+        to: options.email,
+        subject: `[${options.submission.trackingNumber}] Confirmacion de recepcion`,
+        html: renderConfirmationEmail({
+          site: options.site,
+          kind: options.kind,
+          trackingNumber: options.submission.trackingNumber,
+          subject: options.subject,
+        }),
+      });
+      confirmationSent = true;
+      await safelyMarkNotification(
+        options.submission.id,
+        "confirmation",
+        "sent"
+      );
+    } catch (error) {
+      await safelyMarkNotification(
+        options.submission.id,
+        "confirmation",
+        "failed",
+        notificationError(error)
+      );
+      console.error("No fue posible enviar la confirmacion al solicitante", {
+        trackingNumber: options.submission.trackingNumber,
+        error: notificationError(error),
+      });
+    }
+  }
+
+  return { internalNotificationSent, confirmationSent };
 }
 
 /**
@@ -456,93 +565,6 @@ async function verifyTurnstile(request: Request, token: string) {
   }
 }
 
-export async function handleContactRequest(request: Request, site: FormSiteId) {
-  try {
-    const payload = getJsonPayload(await request.json());
-    if (jsonText(payload, "website")) return jsonResponse({ ok: true });
-    await verifyTurnstile(request, jsonText(payload, "turnstileToken"));
-
-    const contactType = validChoice(
-      required(jsonText(payload, "contactType"), "tipo de contacto", 20),
-      CONTACT_TYPES,
-      "tipo de contacto"
-    );
-    const isClient = contactType === "client";
-    const contactTypeLabel = isClient ? "Soy cliente" : "Contacto general";
-    const allowedSubjects = isClient
-      ? CLIENT_CONTACT_SUBJECTS
-      : GENERAL_CONTACT_SUBJECTS;
-    const name = required(jsonText(payload, "name"), "nombre", 120);
-    const email = validEmail(
-      required(jsonText(payload, "email"), "correo electrónico", 254)
-    );
-    const phone = jsonText(payload, "phone").replace(/\D/g, "");
-    if (phone) validDigits(phone, "teléfono", 30);
-    const companyValue = jsonText(payload, "company");
-    const company = isClient
-      ? required(companyValue, "empresa o establecimiento", 160)
-      : companyValue
-        ? required(companyValue, "empresa o establecimiento", 160)
-        : "";
-    const city = isClient
-      ? required(jsonText(payload, "city"), "ciudad", 120)
-      : "";
-    const clientCodeValue = isClient ? jsonText(payload, "clientCode") : "";
-    const clientCode = clientCodeValue
-      ? required(clientCodeValue, "código de cliente", 80)
-      : "";
-    const subject = validChoice(
-      required(jsonText(payload, "subject"), "asunto", 100),
-      new Set(Object.keys(allowedSubjects)),
-      "asunto"
-    );
-    const message = required(jsonText(payload, "message"), "mensaje");
-    const subjectLabel = allowedSubjects[subject];
-
-    await sendWithResend({
-      site,
-      kind: "contact",
-      subject: `[${isClient ? "Cliente" : "Contacto general"}] ${subjectLabel} — ${name}`,
-      replyTo: email,
-      html: renderEmail({
-        site,
-        eyebrow: isClient ? "Solicitud de cliente" : "Nuevo contacto general",
-        title: isClient
-          ? `${name} solicita atención como cliente`
-          : `${name} quiere ponerse en contacto`,
-        intro: isClient
-          ? `Se recibió una solicitud de un cliente desde el sitio web de ${getEmailBrand(site).name}.`
-          : `Se recibió una consulta general desde el sitio web de ${getEmailBrand(site).name}.`,
-        summaryLabel: "Motivo de contacto",
-        summary: subjectLabel,
-        sections: [
-          {
-            title: isClient
-              ? "Información del cliente"
-              : "Información de contacto",
-            fields: [
-              ["Tipo de contacto", contactTypeLabel],
-              ["Nombre", name],
-              ["Correo electrónico", email],
-              ["Teléfono", phone],
-              ["Empresa o establecimiento", company],
-              ["Ciudad", city],
-              ["Código de cliente", clientCode],
-            ],
-          },
-          { title: "Mensaje recibido", content: message },
-        ],
-        footerNote:
-          "Puedes responder directamente a este correo para contactar a la persona que diligenció el formulario.",
-      }),
-    });
-
-    return jsonResponse({ ok: true });
-  } catch (error) {
-    return handleError(error);
-  }
-}
-
 export async function handleCareersRequest(request: Request, site: FormSiteId) {
   try {
     const form = await request.formData();
@@ -558,7 +580,18 @@ export async function handleCareersRequest(request: Request, site: FormSiteId) {
       "teléfono"
     );
     const city = required(text(form.get("city")), "ciudad");
-    const area = required(text(form.get("area")), "área de interés", 100);
+    const vacancyId = text(form.get("vacancyId"));
+    const vacancy = vacancyId ? getCareerJob(vacancyId) : undefined;
+    if (vacancyId && !vacancy) {
+      throw new FormRequestError("La vacante seleccionada no es válida.");
+    }
+    const area = vacancy
+      ? vacancy.department
+      : required(text(form.get("area")), "área de interés", 100);
+    if (vacancy) {
+      form.set("vacancyTitle", vacancy.title);
+      form.set("area", vacancy.area);
+    }
     const profile = required(text(form.get("profile")), "perfil");
     const accepted = text(form.get("data-policy-acceptance"));
     if (accepted !== "on" && accepted !== "true") {
@@ -576,23 +609,61 @@ export async function handleCareersRequest(request: Request, site: FormSiteId) {
       ALLOWED_RESUME_EXTENSIONS
     );
 
-    await sendWithResend({
+    const subject = `${name} — ${vacancy?.title ?? area}`;
+    const vacancySections: EmailSection[] = vacancy
+      ? [
+          {
+            title: "Vacante seleccionada",
+            fields: [
+              ["Código de vacante", vacancy.id],
+              ["Cargo", vacancy.title],
+              ["Área", vacancy.department],
+              ["Ubicación", `${vacancy.city} · ${vacancy.workMode}`],
+            ],
+          },
+        ]
+      : [];
+    const submission = await persistFormSubmission({
       site,
       kind: "careers",
-      subject: `[Trabaja con nosotros] ${name} — ${area}`,
-      replyTo: email,
+      clientRequestId: text(form.get("clientRequestId")),
+      contactEmail: email,
+      subject,
+      data: formFields(form, [
+        "resume",
+        "website",
+        "turnstileToken",
+        "clientRequestId",
+      ]),
+      attachments: [
+        {
+          filename: attachment.filename,
+          contentType: attachment.contentType,
+          content: attachment.buffer,
+        } satisfies StoredFormAttachment,
+      ],
+    });
+    const notification = await notifySubmission({
+      submission,
+      site,
+      kind: "careers",
+      email,
+      subject,
+      internalSubject: `[Trabaja con nosotros] ${subject}`,
       attachments: [attachment],
-      html: renderEmail({
+      internalHtml: renderEmail({
         site,
         eyebrow: "Trabaja con nosotros",
         title: `${name} envió su perfil laboral`,
         intro: `Se recibió una nueva postulación para el equipo de ${getEmailBrand(site).name}.`,
-        summaryLabel: "Área de interés",
-        summary: area,
+        summaryLabel: "Número de radicado",
+        summary: submission.trackingNumber,
         sections: [
+          ...vacancySections,
           {
             title: "Datos de la persona postulante",
             fields: [
+              ["Número de radicado", submission.trackingNumber],
               ["Nombre", name],
               ["Correo electrónico", email],
               ["Teléfono", phone],
@@ -605,7 +676,12 @@ export async function handleCareersRequest(request: Request, site: FormSiteId) {
       }),
     });
 
-    return jsonResponse({ ok: true });
+    return jsonResponse({
+      ok: true,
+      trackingNumber: submission.trackingNumber,
+      notificationSent:
+        notification.internalNotificationSent && notification.confirmationSent,
+    });
   } catch (error) {
     return handleError(error);
   }
@@ -620,7 +696,7 @@ export async function handleSuppliersRequest(
     if (text(form.get("website"))) return jsonResponse({ ok: true });
     await verifyTurnstile(request, text(form.get("turnstileToken")));
 
-    validChoice(
+    const supplierType = validChoice(
       required(text(form.get("supplierType")), "tipo de proveedor", 40),
       SUPPLIER_TYPES,
       "tipo de proveedor"
@@ -647,51 +723,91 @@ export async function handleSuppliersRequest(
       );
     }
 
-    const supplierTypeLabel = "Proveedor de mercancía";
-    const productCategory = validChoice(
-      required(
-        text(form.get("productCategory")),
-        "categoría de productos",
-        100
-      ),
-      SUPPLIER_PRODUCT_CATEGORIES,
-      "categoría de productos"
-    );
-    const brands = required(text(form.get("brands")), "marcas ofrecidas", 500);
-    const productTypes = required(
-      text(form.get("productTypes")),
-      "tipo de productos",
-      1000
-    );
-    const marketPresence = validChoice(
-      required(
-        text(form.get("marketPresence")),
-        "presencia en el mercado colombiano",
-        10
-      ),
-      YES_NO_OPTIONS,
-      "presencia en el mercado colombiano"
-    );
-    const distributionSegment = validChoice(
-      required(
-        text(form.get("distributionSegment")),
-        "segmento comercial",
-        100
-      ),
-      SUPPLIER_DISTRIBUTION_SEGMENTS,
-      "segmento comercial"
-    );
+    let detailSection: EmailSection;
+    let supplierTypeLabel: string;
 
-    const detailSection: EmailSection = {
-      title: "Oferta comercial",
-      fields: [
-        ["Categoría", productCategory],
-        ["Marcas ofrecidas", brands],
-        ["Presencia en Colombia", marketPresence],
-        ["Segmento de distribución", distributionSegment],
-      ],
-      content: productTypes,
-    };
+    if (supplierType === "merchandise") {
+      supplierTypeLabel = "Proveedor de mercancía";
+      const productCategory = validChoice(
+        required(
+          text(form.get("productCategory")),
+          "categoría de productos",
+          100
+        ),
+        SUPPLIER_PRODUCT_CATEGORIES,
+        "categoría de productos"
+      );
+      const brands = required(
+        text(form.get("brands")),
+        "marcas ofrecidas",
+        500
+      );
+      const productTypes = required(
+        text(form.get("productTypes")),
+        "tipo de productos",
+        1000
+      );
+      const marketPresence = validChoice(
+        required(
+          text(form.get("marketPresence")),
+          "presencia en el mercado colombiano",
+          10
+        ),
+        YES_NO_OPTIONS,
+        "presencia en el mercado colombiano"
+      );
+      const isCompetitor = validChoice(
+        required(text(form.get("isCompetitor")), "competencia de marcas", 10),
+        YES_NO_OPTIONS,
+        "competencia de marcas"
+      );
+      const distributionSegment = validChoice(
+        required(
+          text(form.get("distributionSegment")),
+          "segmento comercial",
+          100
+        ),
+        SUPPLIER_DISTRIBUTION_SEGMENTS,
+        "segmento comercial"
+      );
+
+      detailSection = {
+        title: "Oferta comercial",
+        fields: [
+          ["Categoría", productCategory],
+          ["Marcas ofrecidas", brands],
+          ["Presencia en Colombia", marketPresence],
+          ["Competencia de marcas representadas", isCompetitor],
+          ["Segmento de distribución", distributionSegment],
+        ],
+        content: productTypes,
+      };
+    } else {
+      supplierTypeLabel = "Proveedor de servicios";
+      const servicesDescription = required(
+        text(form.get("servicesDescription")),
+        "descripción de servicios",
+        2000
+      );
+      const companyLocation = required(
+        text(form.get("companyLocation")),
+        "ubicación de la compañía",
+        500
+      );
+      const websiteUrl = validWebUrl(
+        text(form.get("websiteUrl")),
+        "página web"
+      );
+
+      detailSection = {
+        title: "Servicios ofrecidos",
+        fields: [
+          ["Ubicación y cobertura", companyLocation],
+          ["Página web", websiteUrl],
+        ],
+        content: servicesDescription,
+      };
+    }
 
     const portfolio = form.get("portfolio");
     const attachments =
@@ -699,23 +815,48 @@ export async function handleSuppliersRequest(
         ? [await fileToAttachment(portfolio, ALLOWED_SUPPLIER_EXTENSIONS)]
         : [];
 
-    await sendWithResend({
+    const subject = `${supplierTypeLabel} — ${companyName}`;
+    const submission = await persistFormSubmission({
       site,
       kind: "suppliers",
-      subject: `[Proveedores] ${supplierTypeLabel} — ${companyName}`,
-      replyTo: email,
+      clientRequestId: text(form.get("clientRequestId")),
+      contactEmail: email,
+      subject,
+      data: formFields(form, [
+        "portfolio",
+        "website",
+        "turnstileToken",
+        "clientRequestId",
+      ]),
+      attachments: attachments.map(
+        (attachment) =>
+          ({
+            filename: attachment.filename,
+            contentType: attachment.contentType,
+            content: attachment.buffer,
+          }) satisfies StoredFormAttachment
+      ),
+    });
+    const notification = await notifySubmission({
+      submission,
+      site,
+      kind: "suppliers",
+      email,
+      subject,
+      internalSubject: `[Proveedores] ${subject}`,
       attachments,
-      html: renderEmail({
+      internalHtml: renderEmail({
         site,
         eyebrow: "Nuevo registro de proveedor",
         title: `${companyName} envió su información comercial`,
         intro: `Se recibió un nuevo registro de proveedor desde el sitio web de ${getEmailBrand(site).name}.`,
-        summaryLabel: "Modalidad del registro",
-        summary: supplierTypeLabel,
+        summaryLabel: "Número de radicado",
+        summary: submission.trackingNumber,
         sections: [
           {
             title: "Información de la empresa",
             fields: [
+              ["Número de radicado", submission.trackingNumber],
               ["Razón social", companyName],
               ["NIT", nit],
               ["Nombre del contacto", contactName],
@@ -737,7 +878,12 @@ export async function handleSuppliersRequest(
       }),
     });
 
-    return jsonResponse({ ok: true });
+    return jsonResponse({
+      ok: true,
+      trackingNumber: submission.trackingNumber,
+      notificationSent:
+        notification.internalNotificationSent && notification.confirmationSent,
+    });
   } catch (error) {
     return handleError(error);
   }
@@ -881,30 +1027,52 @@ export async function handlePqrsRequest(request: Request, site: FormSiteId) {
       ? formValue(form, "razonSocial")
       : `${formValue(form, "nombres")} ${formValue(form, "apellidos")}`.trim();
 
-    await sendWithResend({
+    const subject = `${tipoSolicitud} — ${asunto}`;
+    const submission = await persistFormSubmission({
       site,
       kind: "pqrs",
-      subject: `[PQRS] ${tipoSolicitud} — ${asunto}`,
-      replyTo: email,
+      clientRequestId: formValue(form, "clientRequestId"),
+      contactEmail: email,
+      subject,
+      data: formFields(form, [
+        "attachments",
+        "website",
+        "turnstileToken",
+        "clientRequestId",
+      ]),
+      attachments: attachments.map(
+        (attachment) =>
+          ({
+            filename: attachment.filename,
+            contentType: attachment.contentType,
+            content: attachment.buffer,
+          }) satisfies StoredFormAttachment
+      ),
+    });
+    const notification = await notifySubmission({
+      submission,
+      site,
+      kind: "pqrs",
+      email,
+      subject,
+      internalSubject: `[PQRS] ${subject}`,
       attachments,
-      html: renderEmail({
+      internalHtml: renderEmail({
         site,
         eyebrow: "Nueva solicitud PQRS",
         title: `${tipoSolicitud} recibida`,
         intro: `Se recibió una solicitud formal dirigida a ${getEmailBrand(site).name}.`,
-        summaryLabel: "Asunto de la solicitud",
-        summary: asunto,
+        summaryLabel: "Número de radicado",
+        summary: submission.trackingNumber,
         sections: [
           {
             title: "Resumen de la solicitud",
             fields: [
+              ["Número de radicado", submission.trackingNumber],
               ["Tipo de solicitud", tipoSolicitud],
               ["Relación con la empresa", relacion],
               ["Requerimiento explicado", causal],
-              [
-                "Estado del canal",
-                "Envío por correo; sin radicado oficial ni expediente persistido",
-              ],
+              ["Estado del canal", "Expediente persistido en la base de datos"],
               ["Tipo de solicitante", tipoSolicitante],
             ],
           },
@@ -945,7 +1113,12 @@ export async function handlePqrsRequest(request: Request, site: FormSiteId) {
       }),
     });
 
-    return jsonResponse({ ok: true });
+    return jsonResponse({
+      ok: true,
+      trackingNumber: submission.trackingNumber,
+      notificationSent:
+        notification.internalNotificationSent && notification.confirmationSent,
+    });
   } catch (error) {
     return handleError(error);
   }
@@ -954,6 +1127,16 @@ export async function handlePqrsRequest(request: Request, site: FormSiteId) {
 function handleError(error: unknown) {
   if (error instanceof FormRequestError) {
     return jsonResponse({ ok: false, error: error.message }, error.status);
+  }
+  if (error instanceof FormDatabaseError) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "El canal de recepción no está disponible en este momento. Intenta de nuevo más tarde.",
+      },
+      503
+    );
   }
   console.error("Error inesperado procesando un formulario", error);
   return jsonResponse(

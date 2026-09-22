@@ -36,6 +36,11 @@ export {
 } from "./config/pqrsFilingContent";
 export { CORPORATE_TECHNOLOGY } from "./config/technologyContent";
 export { LA_NIEVE_TIMELINE, UNIMARKA_TIMELINE } from "./config/timelineContent";
+export {
+  DEMO_JOBS,
+  getCareerJob,
+  type CareerJob,
+} from "./config/careersContent";
 export type {
   SiteConfig,
   SiteDataPolicyDocument,
@@ -72,9 +77,9 @@ export { HomePage } from "./pages/HomePage";
 export { AboutPage } from "./pages/AboutPage";
 export { AlliesPage } from "./pages/AlliesPage";
 export { CulturePage } from "./pages/CulturePage";
-export { ContactPage } from "./pages/ContactPage";
 export { SuppliersPage } from "./pages/SuppliersPage";
 export { CareersPage } from "./pages/CareersPage";
+export { CareerApplicationPage } from "./pages/CareerApplicationPage";
 export { LegalPage } from "./pages/LegalPage";
 export { EthicsCodePage } from "./pages/EthicsCodePage";
 export { DataPolicyPage } from "./pages/DataPolicyPage";

@@ -44,10 +44,9 @@ const FREQUENCY_BY_PAGE: Partial<
 /**
  * Builds the sitemap directly from the real navigation tree, so it can never
  * list a route that doesn't actually exist in the site's own menu, nor drift
- * out of sync with it. Redirect-only legacy routes and the intentionally
- * unlinked, `noindex`d PQRS filing route is excluded by construction. The
- * provisional ethics page is linked for review but explicitly filtered while
- * its fictional content remains `noindex`.
+ * out of sync with it. Redirect-only legacy routes, the intentionally
+ * unlinked, `noindex`d PQRS filing route and the hidden provisional ethics
+ * page are excluded by construction.
  *
  * `lastModified` is intentionally omitted: this project has no reliable
  * per-page last-modified source (no CMS, no content timestamps), and

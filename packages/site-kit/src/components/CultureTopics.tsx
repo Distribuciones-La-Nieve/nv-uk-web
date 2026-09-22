@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RevealGroup } from "./RevealGroup";
 import styles from "./CultureFlipCard.module.css";
 
@@ -54,117 +54,94 @@ const tips: Record<"la-nieve" | "unimarka", readonly Tip[]> = {
   ],
 };
 
-function TipVideo({ tip, character }: { tip: Tip; character: string }) {
-  const ref = useRef<HTMLVideoElement>(null);
-  useEffect(() => {
-    const video = ref.current;
-    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (!motion.matches) void video?.play().catch(() => {});
-    const pause = () => {
-      if (motion.matches) video?.pause();
-    };
-    motion.addEventListener("change", pause);
-    return () => {
-      video?.pause();
-      motion.removeEventListener("change", pause);
-    };
-  }, []);
-  return (
-    <video
-      ref={ref}
-      className={styles.video}
-      src={`/videos/tips/${tip.file}.${tip.transparent ? "webm" : "mp4"}`}
-      poster={`/images/tips/${tip.file}.${tip.transparent ? "png" : "jpg"}`}
-      controls={false}
-      muted
-      loop
-      playsInline
-      disablePictureInPicture
-      disableRemotePlayback
-      preload="none"
-      aria-label={`${character}: ${tip.title}`}
-    />
-  );
-}
-
 function TipCard({
   tip,
   character,
-  selected,
-  onToggle,
   index,
 }: {
   tip: Tip;
   character: string;
-  selected: boolean;
-  onToggle: () => void;
   index: number;
 }) {
-  const id = useId();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
   const mediaClass = `${styles.media} ${tip.transparent ? styles.brandScene : ""}`;
+
+  useEffect(() => {
+    const video = videoRef.current;
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const pauseForReducedMotion = () => {
+      if (motion.matches) {
+        video?.pause();
+        setPlaying(false);
+      }
+    };
+    motion.addEventListener("change", pauseForReducedMotion);
+    return () => {
+      video?.pause();
+      motion.removeEventListener("change", pauseForReducedMotion);
+    };
+  }, []);
+
+  function playVideo() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    void videoRef.current?.play().catch(() => setPlaying(false));
+  }
+
+  function pauseVideo() {
+    const video = videoRef.current;
+    video?.pause();
+    if (video) video.currentTime = 0;
+    setPlaying(false);
+  }
+
   return (
     <article
-      className={styles.card}
-      onClick={(event) => {
-        if ((event.target as HTMLElement).closest("button, a, input"))
-          return;
-        onToggle();
-      }}
+      className={`${styles.card} ${playing ? styles.playing : ""}`}
+      tabIndex={0}
+      aria-label={`${tip.title}. Pasa el cursor o enfoca la tarjeta para reproducir el video.`}
+      onMouseEnter={() => playVideo()}
+      onMouseLeave={pauseVideo}
+      onFocus={() => playVideo()}
+      onBlur={pauseVideo}
     >
-      <div className={styles.perspective}>
-        <div className={`${styles.rotator} ${selected ? styles.flipped : ""}`}>
-          <div
-            className={`${styles.face} ${styles.front}`}
-            inert={selected}
-            aria-hidden={selected}
-          >
-            <div className={mediaClass}>
-              <Image
-                src={`/images/tips/${tip.file}.${tip.transparent ? "png" : "jpg"}`}
-                alt={`${character}: ${tip.title}`}
-                fill
-                sizes="(min-width: 1280px) 384px, (min-width: 768px) 31vw, calc(100vw - 2rem)"
-                className={styles.poster}
-              />
-            </div>
-            <div className={styles.copy}>
-              <span className={styles.eyebrow}>
-                Consejo {String(index + 1).padStart(2, "0")} · {character}
-              </span>
-              <h3>{tip.title}</h3>
-              <p className={styles.invitation}>
-                Un consejo para poner en práctica en tu negocio.
-              </p>
-            </div>
-          </div>
-          <div
-            id={id}
-            className={`${styles.face} ${styles.back}`}
-            inert={!selected}
-            aria-hidden={!selected}
-          >
-            <div className={mediaClass}>
-              {selected && <TipVideo tip={tip} character={character} />}
-            </div>
-            <div className={styles.copy}>
-              <span className={styles.eyebrow}>{character} te recomienda</span>
-              <h3>{tip.title}</h3>
-              <p>{tip.detail}</p>
-            </div>
-          </div>
-        </div>
+      <div className={mediaClass}>
+        <Image
+          src={`/images/tips/${tip.file}.${tip.transparent ? "png" : "jpg"}`}
+          alt={`${character}: ${tip.title}`}
+          fill
+          sizes="(min-width: 1280px) 384px, (min-width: 768px) 31vw, calc(100vw - 2rem)"
+          className={styles.poster}
+        />
+        <video
+          ref={videoRef}
+          className={styles.video}
+          src={`/videos/tips/${tip.file}.${tip.transparent ? "webm" : "mp4"}`}
+          muted
+          loop
+          playsInline
+          disablePictureInPicture
+          disableRemotePlayback
+          preload="metadata"
+          aria-label={`${character}: ${tip.title}`}
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+        />
+        {!playing && (
+          <span className={styles.playHint} aria-hidden="true">
+            Pasa el cursor para reproducir
+          </span>
+        )}
       </div>
-      <button
-        type="button"
-        className={styles.toggle}
-        aria-expanded={selected}
-        aria-controls={id}
-        aria-label={`${selected ? "Volver a la portada" : "Girar y para ver consejo"}: ${tip.title}`}
-        onClick={onToggle}
-      >
-        {selected ? "Volver a la portada" : "Girar y para ver consejo"}
-        <span aria-hidden="true">↻</span>
-      </button>
+      <div className={styles.copy}>
+        <span className={styles.eyebrow}>
+          Consejo {String(index + 1).padStart(2, "0")} · {character}
+        </span>
+        <h3>{tip.title}</h3>
+        <p>{tip.detail}</p>
+      </div>
     </article>
   );
 }
@@ -174,7 +151,6 @@ export function CultureTopics({
 }: {
   site?: "la-nieve" | "unimarka";
 }) {
-  const [selected, setSelected] = useState<number | null>(null);
   const character = site === "la-nieve" ? "Don Tulio" : "Doña Ceci";
   return (
     <RevealGroup
@@ -182,16 +158,7 @@ export function CultureTopics({
       stagger={0.1}
     >
       {tips[site].map((tip, index) => (
-        <TipCard
-          key={tip.file}
-          tip={tip}
-          index={index}
-          character={character}
-          selected={selected === index}
-          onToggle={() =>
-            setSelected((current) => (current === index ? null : index))
-          }
-        />
+        <TipCard key={tip.file} tip={tip} index={index} character={character} />
       ))}
     </RevealGroup>
   );

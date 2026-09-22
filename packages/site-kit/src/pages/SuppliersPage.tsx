@@ -1,17 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { FileUp, Send } from "lucide-react";
 import type { SiteConfig } from "../config/types";
 import { RevealGroup } from "../components/RevealGroup";
+import { ContactChannels } from "../components/ContactChannels";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import {
+  createClientRequestId,
   isValidEmail,
   sanitizeDigits,
   sanitizePersonName,
   sanitizePhone,
 } from "../lib/formValidation";
+
+type SupplierType = "merchandise" | "services";
 
 const fieldClassName =
   "mt-2 min-h-12 min-w-0 w-full rounded-xl border border-input bg-background px-4 py-3 text-foreground shadow-sm transition-[border-color,box-shadow] placeholder:text-muted-foreground/75 hover:border-primary/40 focus:border-primary focus:ring-2 focus:ring-primary/20";
@@ -34,9 +38,17 @@ const DISTRIBUTION_SEGMENTS = [
   "Otros",
 ] as const;
 
-function SupplierIntroduction({ site }: { site: SiteConfig }) {
+function SupplierIntroduction({
+  site,
+  supplierType,
+}: {
+  site: SiteConfig;
+  supplierType: SupplierType;
+}) {
+  const isMerchandise = supplierType === "merchandise";
+
   return (
-    <div className="lg:sticky lg:top-28">
+    <div>
       <span className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">
         {site.suppliers.eyebrow}
       </span>
@@ -44,7 +56,7 @@ function SupplierIntroduction({ site }: { site: SiteConfig }) {
         {site.suppliers.title}
       </h1>
       <p className="mt-6 text-lg font-bold text-foreground">
-        Quiero ser proveedor de mercancía.
+        Quiero ser proveedor de {isMerchandise ? "mercancía" : "servicios"}.
       </p>
       <p className="mt-4 max-w-xl text-pretty leading-relaxed text-muted-foreground">
         Te damos la bienvenida al formulario de inscripción inicial para hacer
@@ -65,14 +77,22 @@ function SupplierIntroduction({ site }: { site: SiteConfig }) {
   );
 }
 
-/** Registration form for merchandise suppliers. */
+/** Registration form for merchandise and service suppliers. */
 export function SuppliersPage({ site }: { site: SiteConfig }) {
+  const [supplierType, setSupplierType] = useState<SupplierType>("merchandise");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "success" | "error"
   >("idle");
   const [submitMessage, setSubmitMessage] = useState("");
   const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
+  const clientRequestIdRef = useRef<string | null>(null);
+
+  function selectSupplierType(nextType: SupplierType) {
+    setSupplierType(nextType);
+    setSubmitStatus("idle");
+    setSubmitMessage("");
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -85,7 +105,11 @@ export function SuppliersPage({ site }: { site: SiteConfig }) {
 
     try {
       const form = new FormData(formElement);
-      form.set("supplierType", "merchandise");
+      form.set("supplierType", supplierType);
+      const clientRequestId =
+        clientRequestIdRef.current ?? createClientRequestId();
+      clientRequestIdRef.current = clientRequestId;
+      form.set("clientRequestId", clientRequestId);
       const response = await fetch("/api/forms/suppliers", {
         method: "POST",
         body: form,
@@ -93,6 +117,8 @@ export function SuppliersPage({ site }: { site: SiteConfig }) {
       const result = (await response.json().catch(() => null)) as {
         ok?: boolean;
         error?: string;
+        trackingNumber?: string;
+        notificationSent?: boolean;
       } | null;
 
       if (!response.ok || !result?.ok) {
@@ -102,9 +128,14 @@ export function SuppliersPage({ site }: { site: SiteConfig }) {
       }
 
       formElement.reset();
+      clientRequestIdRef.current = null;
       setSubmitStatus("success");
       setSubmitMessage(
-        "Recibimos tu registro. Nuestro equipo revisará la información enviada."
+        result?.trackingNumber
+          ? result.notificationSent === false
+            ? `Tu registro quedó radicado con el número ${result.trackingNumber}. La confirmación por correo está pendiente.`
+            : `Tu registro quedó radicado con el número ${result.trackingNumber}. Te enviamos la confirmación por correo.`
+          : "Recibimos tu registro. Nuestro equipo revisará la información enviada."
       );
     } catch (error) {
       setSubmitStatus("error");
@@ -123,7 +154,8 @@ export function SuppliersPage({ site }: { site: SiteConfig }) {
     <section className="bg-background px-4 pb-20 pt-32 sm:px-6 sm:pb-24 sm:pt-36 lg:px-8">
       <div className="mx-auto grid max-w-7xl items-start gap-10 lg:grid-cols-[minmax(18rem,0.78fr)_minmax(0,1.22fr)] lg:gap-14 xl:gap-20">
         <RevealGroup>
-          <SupplierIntroduction site={site} />
+          <SupplierIntroduction site={site} supplierType={supplierType} />
+          <ContactChannels site={site} />
         </RevealGroup>
 
         <RevealGroup>
@@ -137,10 +169,48 @@ export function SuppliersPage({ site }: { site: SiteConfig }) {
               Registro de proveedores
             </h2>
 
-            <input type="hidden" name="supplierType" value="merchandise" />
+            <div
+              className="grid gap-3 sm:grid-cols-2"
+              role="tablist"
+              aria-label="Tipo de proveedor"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={supplierType === "merchandise"}
+                aria-controls="supplier-fields"
+                onClick={() => selectSupplierType("merchandise")}
+                className={
+                  "min-h-12 rounded-full px-5 text-sm font-bold transition-[background-color,color,transform,box-shadow] hover:-translate-y-0.5 motion-reduce:transform-none " +
+                  (supplierType === "merchandise"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-background/90 text-foreground hover:bg-background")
+                }
+              >
+                Proveedor de mercancía
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={supplierType === "services"}
+                aria-controls="supplier-fields"
+                onClick={() => selectSupplierType("services")}
+                className={
+                  "min-h-12 rounded-full px-5 text-sm font-bold transition-[background-color,color,transform,box-shadow] hover:-translate-y-0.5 motion-reduce:transform-none " +
+                  (supplierType === "services"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-background/90 text-foreground hover:bg-background")
+                }
+              >
+                Proveedor de servicios
+              </button>
+            </div>
+
+            <input type="hidden" name="supplierType" value={supplierType} />
 
             <div
               id="supplier-fields"
+              role="tabpanel"
               className="mt-7 grid gap-5 sm:grid-cols-2"
             >
               <label className="text-sm font-semibold text-foreground sm:col-span-2">
@@ -234,82 +304,141 @@ export function SuppliersPage({ site }: { site: SiteConfig }) {
                 />
               </label>
 
-              <label className="text-sm font-semibold text-foreground sm:col-span-2">
-                ¿Qué categoría de productos ofrece?
-                <select
-                  className={fieldClassName}
-                  name="productCategory"
-                  defaultValue=""
-                  required
-                >
-                  <option value="" disabled>
-                    Selecciona una categoría
-                  </option>
-                  {PRODUCT_CATEGORIES.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {supplierType === "merchandise" ? (
+                <>
+                  <label className="text-sm font-semibold text-foreground sm:col-span-2">
+                    ¿Qué categoría de productos ofrece?
+                    <select
+                      className={fieldClassName}
+                      name="productCategory"
+                      defaultValue=""
+                      required
+                    >
+                      <option value="" disabled>
+                        Selecciona una categoría
+                      </option>
+                      {PRODUCT_CATEGORIES.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-              <label className="text-sm font-semibold text-foreground sm:col-span-2">
-                ¿Cuáles son las marcas que ofrece?
-                <input
-                  className={fieldClassName}
-                  type="text"
-                  name="brands"
-                  placeholder="Indica las marcas que representa"
-                  maxLength={500}
-                  required
-                />
-              </label>
+                  <label className="text-sm font-semibold text-foreground sm:col-span-2">
+                    ¿Cuáles son las marcas que ofrece?
+                    <input
+                      className={fieldClassName}
+                      type="text"
+                      name="brands"
+                      placeholder="Indica las marcas que representa"
+                      maxLength={500}
+                      required
+                    />
+                  </label>
 
-              <label className="text-sm font-semibold text-foreground sm:col-span-2">
-                ¿Qué tipo de productos ofrece?
-                <textarea
-                  className={`${fieldClassName} min-h-28 resize-y`}
-                  name="productTypes"
-                  placeholder="Describe brevemente los productos"
-                  maxLength={1000}
-                  required
-                />
-              </label>
+                  <label className="text-sm font-semibold text-foreground sm:col-span-2">
+                    ¿Qué tipo de productos ofrece?
+                    <textarea
+                      className={`${fieldClassName} min-h-28 resize-y`}
+                      name="productTypes"
+                      placeholder="Describe brevemente los productos"
+                      maxLength={1000}
+                      required
+                    />
+                  </label>
 
-              <label className="text-sm font-semibold text-foreground sm:col-span-2">
-                ¿Tiene o ha tenido presencia en el mercado colombiano?
-                <select
-                  className={fieldClassName}
-                  name="marketPresence"
-                  defaultValue=""
-                  required
-                >
-                  <option value="" disabled>
-                    Selecciona una opción
-                  </option>
-                  <option value="Sí">Sí</option>
-                  <option value="No">No</option>
-                </select>
-              </label>
+                  <label className="text-sm font-semibold text-foreground sm:col-span-2">
+                    ¿Tiene o ha tenido presencia en el mercado colombiano?
+                    <select
+                      className={fieldClassName}
+                      name="marketPresence"
+                      defaultValue=""
+                      required
+                    >
+                      <option value="" disabled>
+                        Selecciona una opción
+                      </option>
+                      <option value="Sí">Sí</option>
+                      <option value="No">No</option>
+                    </select>
+                  </label>
 
-              <label className="text-sm font-semibold text-foreground sm:col-span-2">
-                ¿A qué segmento comercial desea que se realice la distribución?
-                <select
-                  className={fieldClassName}
-                  name="distributionSegment"
-                  defaultValue=""
-                  required
-                >
-                  <option value="" disabled>
-                    Selecciona un segmento
-                  </option>
-                  {DISTRIBUTION_SEGMENTS.map((segment) => (
-                    <option key={segment} value={segment}>
-                      {segment}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  <label className="text-sm font-semibold text-foreground sm:col-span-2">
+                    ¿Es competencia de alguna de las marcas representadas por{" "}
+                    {site.name}?
+                    <select
+                      className={fieldClassName}
+                      name="isCompetitor"
+                      defaultValue=""
+                      required
+                    >
+                      <option value="" disabled>
+                        Selecciona una opción
+                      </option>
+                      <option value="Sí">Sí</option>
+                      <option value="No">No</option>
+                    </select>
+                  </label>
+
+                  <label className="text-sm font-semibold text-foreground sm:col-span-2">
+                    ¿A qué segmento comercial desea que se realice la
+                    distribución?
+                    <select
+                      className={fieldClassName}
+                      name="distributionSegment"
+                      defaultValue=""
+                      required
+                    >
+                      <option value="" disabled>
+                        Selecciona un segmento
+                      </option>
+                      {DISTRIBUTION_SEGMENTS.map((segment) => (
+                        <option key={segment} value={segment}>
+                          {segment}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </>
+              ) : (
+                <>
+                  <label className="text-sm font-semibold text-foreground sm:col-span-2">
+                    Describa los servicios ofrecidos por su compañía
+                    <textarea
+                      className={`${fieldClassName} min-h-32 resize-y`}
+                      name="servicesDescription"
+                      placeholder="Describe los servicios ofrecidos"
+                      maxLength={2000}
+                      required
+                    />
+                  </label>
+
+                  <label className="text-sm font-semibold text-foreground sm:col-span-2">
+                    Ubicación de su compañía
+                    <textarea
+                      className={`${fieldClassName} min-h-28 resize-y`}
+                      name="companyLocation"
+                      placeholder="Ciudad de la oficina principal y ciudades donde presta el servicio"
+                      maxLength={500}
+                      required
+                    />
+                  </label>
+
+                  <label className="text-sm font-semibold text-foreground sm:col-span-2">
+                    Página web
+                    <input
+                      className={fieldClassName}
+                      type="url"
+                      name="websiteUrl"
+                      inputMode="url"
+                      autoComplete="url"
+                      placeholder="https://www.empresa.com"
+                      maxLength={300}
+                    />
+                  </label>
+                </>
+              )}
 
               <label className="text-sm font-semibold text-foreground sm:col-span-2">
                 Portafolio o propuesta comercial

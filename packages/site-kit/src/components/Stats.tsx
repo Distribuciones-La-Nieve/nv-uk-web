@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { SiteConfig } from "../config/types";
 import { useRevealAnimation } from "../hooks/useRevealAnimation";
 import { WarehouseMap } from "./WarehouseMap";
@@ -9,6 +10,19 @@ export function Stats({ site }: { site: SiteConfig }) {
   const contentRef = useRevealAnimation<HTMLDivElement>({ type: "fadeUp" });
 
   const isUnimarka = site.id === "unimarka";
+  const mapCharacter = isUnimarka
+    ? {
+        src: "/images/personajes-final-07.png",
+        alt: "Personaje de Unimarka señalando el mapa de bodegas",
+        width: 1081,
+        height: 1081,
+      }
+    : {
+        src: "/images/personajes-final-03.png",
+        alt: "Personaje de Distribuciones La Nieve señalando el mapa de bodegas",
+        width: 1080,
+        height: 1080,
+      };
   const coverage = site.stats.groups
     .flatMap((group) => group.figures)
     .find((figure) => figure.value.endsWith("%"));
@@ -23,8 +37,8 @@ export function Stats({ site }: { site: SiteConfig }) {
       className="scroll-mt-24 border-y border-border bg-surface py-16 sm:py-20"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-[2.5rem] bg-brand-primary bg-gradient-to-br from-brand-primary to-[color-mix(in_srgb,var(--brand-primary)_78%,black)] px-6 py-10 text-white shadow-card sm:px-10 lg:px-14">
-          <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
+        <div className="rounded-[2.5rem] bg-brand-primary bg-gradient-to-br from-brand-primary to-[color-mix(in_srgb,var(--brand-primary)_78%,black)] px-6 py-8 text-white shadow-card sm:px-10 sm:py-10 lg:px-14">
+          <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-12">
             <div ref={contentRef} className="min-w-0 max-w-lg">
               <h2
                 id="home-stats-title"
@@ -90,7 +104,19 @@ export function Stats({ site }: { site: SiteConfig }) {
               </dl>
             </div>
             <div ref={figureRef} className="relative min-w-0">
-              <WarehouseMap site={site.id} />
+              <div className="relative z-10 mx-auto mb-[-1.5rem] flex w-full max-w-56 justify-center lg:absolute lg:left-0 lg:top-14 lg:mb-0 lg:w-60 lg:max-w-none lg:justify-start">
+                <Image
+                  src={mapCharacter.src}
+                  alt={mapCharacter.alt}
+                  width={mapCharacter.width}
+                  height={mapCharacter.height}
+                  sizes="(min-width: 1024px) 240px, 224px"
+                  className="h-auto w-56 object-contain lg:w-60"
+                />
+              </div>
+              <div className="lg:pl-40">
+                <WarehouseMap site={site.id} />
+              </div>
             </div>
           </div>
         </div>
