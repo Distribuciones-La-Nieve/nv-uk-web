@@ -251,7 +251,7 @@ export function CareersPage({ site }: { site: SiteConfig }) {
                         onClick={() => selectJob(job)}
                         aria-pressed={isSelected}
                         className={
-                          "w-full rounded-2xl border p-5 text-left transition-[border-color,background-color,box-shadow,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none " +
+                          "w-full cursor-pointer rounded-2xl border p-5 text-left transition-[border-color,background-color,box-shadow,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none " +
                           (isSelected
                             ? "border-primary bg-card shadow-card"
                             : "border-border bg-card/80 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm")
