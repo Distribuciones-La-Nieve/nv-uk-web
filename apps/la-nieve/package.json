@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
-    "build": "next build --webpack",
-    "start": "next start",
+    "build": "next build --webpack && node ../../scripts/prepare-hostinger-standalone.mjs la-nieve",
+    "start": "node server.js",
     "typecheck": "tsc --noEmit --incremental false"
   },
   "dependencies": {
