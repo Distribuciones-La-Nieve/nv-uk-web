@@ -48,6 +48,8 @@ compartido `packages/site-kit` sin duplicar código.
 
 La configuración completa del panel, las variables y el procedimiento de
 verificación están en [docs/hostinger-node-deployment.md](./docs/hostinger-node-deployment.md).
+El archivo de inicio para cada app en Hostinger es `server.js` dentro de su
+workspace; `npm start` arranca la salida standalone preparada por `npm run build`.
 
 ## Arquitectura
 

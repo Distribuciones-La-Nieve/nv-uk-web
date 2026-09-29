@@ -21,6 +21,8 @@ Repositorio: este repositorio completo
 Rama: rama de producción
 Directorio raíz: apps/la-nieve
 Comando de build: npm run build
+Comando de inicio: npm start
+Archivo de inicio (si el panel lo solicita): server.js
 Versión de Node.js: 20 o superior
 ```
 
@@ -37,6 +39,8 @@ Repositorio: este repositorio completo
 Rama: rama de producción
 Directorio raíz: apps/unimarka
 Comando de build: npm run build
+Comando de inicio: npm start
+Archivo de inicio (si el panel lo solicita): server.js
 Versión de Node.js: 20 o superior
 ```
 
@@ -46,6 +50,22 @@ La Nieve no necesita compilar Unimarka, y viceversa.
 Hostinger ejecuta la instalación automáticamente. No se configura un directorio
 de publicación estática: cada workspace es una aplicación Next.js con rutas de
 servidor.
+
+El build prepara `.next/standalone` con las dependencias trazadas del monorepo,
+incluido `.next/standalone/node_modules/react`, y copia `public` y
+`.next/static` dentro de la aplicación standalone. El `server.js` en la raíz de
+cada workspace arranca **ese** servidor generado por Next. Hostinger debe
+conservar el árbol completo de `.next/standalone` al publicar, especialmente
+`node_modules` dentro de ese árbol. No selecciones `node_modules/react-dom/server.js`
+como archivo de inicio ni copies solo los archivos sueltos de
+`.next/standalone/apps/<marca>`: React está en el nivel superior del bundle.
+
+Si el log muestra `nodejs/server.js → nodejs/server.node.js →
+nodejs/cjs/react-dom-server-legacy.node.production.js`, Hostinger está arrancando
+el archivo `server.js` de **react-dom** en vez del de la aplicación. Comprueba
+que la raíz sea `apps/la-nieve` o `apps/unimarka`, indica el archivo de inicio
+`server.js` de esa raíz, reconstruye sin reutilizar la versión fallida y vuelve
+a desplegar. Un ajuste de DNS en Cloudflare no corrige ese error de arranque.
 
 ## Variables públicas
 
